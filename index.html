@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>어질리티 대회 기록 아카이브</title>
+    <style>
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #dbeafe;
+            --success: #16a34a; --warning: #ea580c; --danger: #dc2626;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+            --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151;
+            --gray-800: #1f2937; --gray-900: #111827;
+            --radius: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: var(--gray-50); color: var(--gray-800); line-height: 1.6; min-height: 100vh;
+        }
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; padding: 1.5rem 1rem; text-align: center; box-shadow: var(--shadow-md);
+        }
+        header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        header p { font-size: 0.85rem; opacity: 0.85; }
+        .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+
+        /* 탭 */
+        .tabs {
+            display: flex; gap: 0; margin-bottom: 1.5rem; background: white;
+            border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1 0 auto; padding: 0.8rem 1rem; border: none; background: white;
+            color: var(--gray-500); font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; white-space: nowrap; text-align: center;
+        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--primary-light); }
+        .tab-btn:hover:not(.active) { background: var(--gray-50); color: var(--gray-700); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* 카드 */
+        .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; margin-bottom: 1rem; }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--gray-800); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--gray-100); }
+
+        /* 폼 */
+        .form-section { margin-bottom: 1.25rem; }
+        .form-section-title { font-size: 0.8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 0.3rem; }
+        .form-group label .required { color: var(--danger); }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.6rem 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 6px;
+            font-size: 0.9rem; color: var(--gray-800); transition: border-color 0.2s, box-shadow 0.2s; background: white;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-group input::placeholder { color: var(--gray-400); }
+
+        .btn { padding: 0.7rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-outline:hover { background: var(--primary-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #15803d; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #c2410c; }
+        .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; }
+
+        .search-box { display: flex; gap: 0.5rem; }
+        .search-box input { flex: 1; padding: 0.7rem 1rem; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.9rem; }
+        .search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        .record-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .record-item { background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 1rem; transition: box-shadow 0.2s; }
+        .record-item:hover { box-shadow: var(--shadow-md); }
+        .record-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+        .record-dog-name { font-weight: 700; font-size: 1rem; color: var(--gray-900); }
+        .record-date { font-size: 0.8rem; color: var(--gray-400); }
+        .record-competition { font-size: 0.9rem; color: var(--gray-600); margin-bottom: 0.5rem; }
+        .record-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem; }
+        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .tag-level { background: #fef3c7; color: #92400e; }
+        .tag-size { background: #dbeafe; color: #1e40af; }
+        .tag-event { background: #f3e8ff; color: #6b21a8; }
+        .tag-rank { background: #dcfce7; color: #166534; }
+        .tag-eliminated { background: #fee2e2; color: #991b1b; }
+        .tag-notice { background: #fef3c7; color: #92400e; }
+        .record-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; background: var(--gray-50); border-radius: 6px; padding: 0.6rem; }
+        .stat { text-align: center; }
+        .stat-label { font-size: 0.7rem; color: var(--gray-400); text-transform: uppercase; font-weight: 600; }
+        .stat-value { font-size: 0.95rem; font-weight: 700; color: var(--gray-800); }
+        .record-memo { margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray-500); font-style: italic; }
+        .record-actions { display: flex; justify-content: flex-end; gap: 0.35rem; margin-top: 0.5rem; }
+
+        .dog-profile { text-align: center; padding: 1.5rem; background: linear-gradient(135deg, var(--primary-light) 0%, #ede9fe 100%); border-radius: var(--radius); margin-bottom: 1rem; }
+        .dog-profile-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .dog-profile-name { font-size: 1.3rem; font-weight: 700; color: var(--gray-900); }
+        .dog-profile-stats { display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+        .profile-stat { text-align: center; }
+        .profile-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+        .profile-stat-label { font-size: 0.75rem; color: var(--gray-500); }
+
+        .empty-state { text-align: center; padding: 3rem 1rem; color: var(--gray-400); }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+        .empty-state-text { font-size: 0.95rem; }
+
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--gray-800); color: white; padding: 0.75rem 1.5rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: all 0.3s ease; z-index: 1000; white-space: nowrap; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: var(--radius); padding: 1.5rem; max-width: 400px; width: 90%; text-align: center; }
+        .modal h3 { margin-bottom: 0.5rem; }
+        .modal p { font-size: 0.9rem; color: var(--gray-500); margin-bottom: 1rem; }
+        .modal .btn-group { justify-content: center; }
+        .modal input[type="password"] { width: 100%; padding: 0.7rem; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 1rem; text-align: center; margin-bottom: 0.5rem; letter-spacing: 0.2em; }
+        .modal input[type="password"]:focus { outline: none; border-color: var(--primary); }
+        .modal .error-msg { color: var(--danger); font-size: 0.8rem; min-height: 1.2em; }
+
+        .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.8rem; color: #1e40af; margin-bottom: 1rem; line-height: 1.5; }
+        .info-box strong { display: block; margin-bottom: 0.25rem; }
+
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .filter-bar select { padding: 0.5rem 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.85rem; color: var(--gray-700); background: white; }
+        .sort-btn { padding: 0.5rem 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.85rem; background: white; color: var(--gray-700); cursor: pointer; }
+        .sort-btn:hover { background: var(--gray-50); }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+        .summary-card { background: white; border-radius: var(--radius); padding: 1rem; text-align: center; box-shadow: var(--shadow); }
+        .summary-card-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .summary-card-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.15rem; }
+
+        .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+        .dog-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+        .dog-list-item { display: flex; justify-content: space-between; align-items: center; background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 0.75rem 1rem; transition: box-shadow 0.2s; cursor: pointer; }
+        .dog-list-item:hover { box-shadow: var(--shadow-md); }
+        .dog-list-item.selected { border-color: var(--primary); background: var(--primary-light); }
+        .dog-list-info { display: flex; flex-direction: column; }
+        .dog-list-name { font-weight: 700; font-size: 0.95rem; color: var(--gray-900); }
+        .dog-list-meta { font-size: 0.8rem; color: var(--gray-500); }
+        .dog-list-actions { display: flex; gap: 0.35rem; }
+        .selected-dog-info { background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 6px; padding: 0.6rem 1rem; margin-top: 0.5rem; font-size: 0.85rem; color: var(--primary-dark); display: none; }
+        .selected-dog-info.show { display: block; }
+        .auto-result-notice { background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: #92400e; margin-top: 0.35rem; display: none; }
+        .auto-result-notice.show { display: block; }
+
+        /* 게시판 */
+        .post-item { background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.6rem; cursor: pointer; transition: box-shadow 0.2s; }
+        .post-item:hover { box-shadow: var(--shadow-md); }
+        .post-item.pinned { border-left: 4px solid var(--warning); background: #fffbeb; }
+        .post-title-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+        .post-title { font-weight: 700; font-size: 0.95rem; color: var(--gray-900); }
+        .post-meta { font-size: 0.78rem; color: var(--gray-400); }
+        .post-body { font-size: 0.88rem; color: var(--gray-600); line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+        .post-detail { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; margin-bottom: 1rem; }
+        .post-detail .post-title { font-size: 1.15rem; margin-bottom: 0.5rem; }
+        .post-detail .post-meta { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--gray-100); }
+
+        /* Admin */
+        .admin-section { margin-bottom: 1.5rem; }
+        .admin-section-title { font-size: 0.95rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--gray-200); }
+        .admin-stat-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+        .admin-stat { background: white; border-radius: var(--radius); padding: 0.75rem 1rem; box-shadow: var(--shadow); text-align: center; flex: 1; min-width: 120px; }
+        .admin-stat-val { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+        .admin-stat-lbl { font-size: 0.72rem; color: var(--gray-500); }
+        .admin-danger-zone { background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius); padding: 1rem; }
+        .admin-danger-zone h4 { color: var(--danger); margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+        /* 강아지 프로필 영역 */
+        .dog-detail-area { margin-top: 1.5rem; }
+        .dog-detail-back { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--primary); cursor: pointer; margin-bottom: 0.75rem; font-weight: 600; }
+        .dog-detail-back:hover { text-decoration: underline; }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.2rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .record-stats { grid-template-columns: repeat(2, 1fr); }
+            .dog-profile-stats { gap: 1rem; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .filter-bar { flex-direction: column; }
+            .filter-bar select, .sort-btn { width: 100%; }
+            .data-actions { flex-direction: column; }
+            .data-actions .btn { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>&#x1F3C6; 어질리티 대회 기록 아카이브</h1>
+        <p>KKF/FCI 규정 기반 &middot; 대회 참가 결과 관리</p>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="all">전체 기록</button>
+            <button class="tab-btn" data-tab="register">기록 등록</button>
+            <button class="tab-btn" data-tab="dogs">강아지</button>
+            <button class="tab-btn" data-tab="board">게시판</button>
+            <button class="tab-btn" data-tab="admin">관리자</button>
+        </div>
+
+        <!-- ===== 전체 기록 ===== -->
+        <div id="tab-all" class="tab-content active">
+            <div id="summaryArea"></div>
+            <div class="filter-bar">
+                <select id="filterLevel"><option value="">전체 난이도</option><option value="비기너">비기너</option><option value="노비스">노비스</option><option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option><option value="Grade 3">Grade 3</option></select>
+                <select id="filterSize"><option value="">전체 체급</option><option value="T">T</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select>
+                <select id="filterEvent"><option value="">전체 종목</option><option value="어질리티">어질리티</option><option value="점핑">점핑</option></select>
+                <button class="sort-btn" id="sortBtn" title="정렬 변경">최신순 &#x25BC;</button>
+            </div>
+            <div id="allRecords" class="record-list"></div>
+            <div class="data-actions">
+                <button class="btn btn-outline btn-sm" id="exportBtn">JSON 내보내기</button>
+                <button class="btn btn-outline btn-sm" id="exportCsvBtn">CSV 내보내기</button>
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">JSON 가져오기<input type="file" id="importFile" accept=".json" style="display:none;"></label>
+            </div>
+        </div>
+
+        <!-- ===== 기록 등록 ===== -->
+        <div id="tab-register" class="tab-content">
+            <div class="info-box">
+                <strong>KKF/FCI 어질리티 규정 안내</strong>
+                체급: S(&lt;35cm) / M(35~43cm) / I(43~48cm) / L(&ge;48cm) / XS, T(내셔널 전용)<br>
+                난이도: 비기너 &rarr; 노비스 &rarr; Grade 1 &rarr; Grade 2 &rarr; Grade 3<br>
+                감점: 실책(폴트) 5점, 거부(리퓨절) 5점 (거부 3회 시 실격)<br>
+                종목: 어질리티(접촉장애물 포함) / 점핑(접촉장애물 미포함)
+            </div>
+            <form id="recordForm" class="card">
+                <div class="card-title">대회 참가 결과 등록</div>
+                <div class="form-section"><div class="form-section-title">참가견 선택</div><div class="form-grid"><div class="form-group full-width"><label>강아지 <span class="required">*</span></label><select id="dogSelect" required><option value="">-- 강아지를 선택하세요 --</option></select><div class="selected-dog-info" id="selectedDogInfo"></div></div></div></div>
+                <div class="form-section"><div class="form-section-title">대회 정보</div><div class="form-grid">
+                    <div class="form-group"><label>대회 날짜 <span class="required">*</span></label><input type="date" id="compDate" required></div>
+                    <div class="form-group"><label>대회명 <span class="required">*</span></label><input type="text" id="compName" placeholder="예: 제82회 FCI 인터내셔널 어질리티" required></div>
+                    <div class="form-group"><label>주최/주관</label><input type="text" id="organizer" placeholder="예: KKF 코리아어질리티클럽"></div>
+                    <div class="form-group"><label>개최 장소</label><input type="text" id="venue" placeholder="예: 춘천 레크파크"></div>
+                </div></div>
+                <div class="form-section"><div class="form-section-title">경기 구분</div><div class="form-grid">
+                    <div class="form-group"><label>종목 <span class="required">*</span></label><select id="eventType" required><option value="">선택</option><option value="어질리티">어질리티 (Agility)</option><option value="점핑">점핑 (Jumping)</option></select></div>
+                    <div class="form-group"><label>난이도 <span class="required">*</span></label><select id="level" required><option value="">선택</option><option value="비기너">비기너 (Beginner)</option><option value="노비스">노비스 (Novice)</option><option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option><option value="Grade 3">Grade 3</option></select></div>
+                    <div class="form-group"><label>체급</label><select id="sizeClass" disabled><option value="">강아지 선택 시 자동 설정</option><option value="T">T</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select></div>
+                    <div class="form-group"><label>경기 유형</label><select id="matchType"><option value="">선택</option><option value="승급전">승급전</option><option value="랭킹전">랭킹전</option><option value="기타">기타</option></select></div>
+                </div></div>
+                <div class="form-section"><div class="form-section-title">경기 결과</div><div class="form-grid">
+                    <div class="form-group"><label>등수</label><input type="number" id="rank" min="1" placeholder="예: 1"></div>
+                    <div class="form-group"><label>참가 두수</label><input type="number" id="totalEntries" min="1" placeholder="예: 15"></div>
+                    <div class="form-group"><label>주행 시간 (초)</label><input type="number" id="runTime" step="0.01" min="0" placeholder="예: 42.35"></div>
+                    <div class="form-group"><label>표준 시간 (초)</label><input type="number" id="standardTime" step="0.01" min="0" placeholder="예: 55.00"></div>
+                    <div class="form-group"><label>실책(폴트) 횟수</label><input type="number" id="faults" min="0" value="0"></div>
+                    <div class="form-group"><label>거부(리퓨절) 횟수</label><input type="number" id="refusals" min="0" value="0"></div>
+                    <div class="form-group"><label>감점 합계</label><input type="number" id="penalties" min="0" step="0.01" placeholder="자동 계산"></div>
+                    <div class="form-group"><label>결과</label><select id="result"><option value="클린런">클린런 (Clean Run)</option><option value="완주">완주</option><option value="실격">실격 (E)</option><option value="기권">기권</option></select><div class="auto-result-notice" id="autoResultNotice">자동 판정됨 (변경 가능)</div></div>
+                    <div class="form-group"><label>실격 사유</label><select id="eliminationReason" disabled><option value="">선택</option><option value="거부 3회">거부 3회 초과</option><option value="제한시간 초과">제한시간(MCT) 초과</option><option value="링 아웃">링 아웃</option><option value="코스 이탈">코스 이탈</option><option value="핸들러 접촉">핸들러 접촉</option><option value="배변">배변 행위</option><option value="기타">기타</option></select></div>
+                    <div class="form-group"><label>승급 여부</label><select id="promoted"><option value="해당없음">해당없음</option><option value="승급">승급 성공</option><option value="미승급">미승급</option></select></div>
+                    <div class="form-group full-width"><label>메모</label><textarea id="memo" placeholder="특이사항, 컨디션, 개선점 등"></textarea></div>
+                </div></div>
+                <div class="btn-group"><button type="submit" class="btn btn-primary">등록하기</button><button type="reset" class="btn btn-outline">초기화</button></div>
+            </form>
+        </div>
+
+        <!-- ===== 강아지 (등록 + 검색 통합) ===== -->
+        <div id="tab-dogs" class="tab-content">
+            <!-- 강아지 등록 폼 -->
+            <form id="dogForm" class="card">
+                <div class="card-title">강아지 등록</div>
+                <div class="form-grid">
+                    <div class="form-group"><label>이름 <span class="required">*</span></label><input type="text" id="dogNameInput" placeholder="예: 초코" required></div>
+                    <div class="form-group"><label>품종</label><input type="text" id="breedInput" placeholder="예: 보더콜리" list="breedList"><datalist id="breedList"><option value="보더콜리"><option value="셔틀랜드 쉽독"><option value="미니어처 푸들"><option value="토이 푸들"><option value="스탠다드 푸들"><option value="잭 러셀 테리어"><option value="파피용"><option value="말리노이즈"><option value="오스트레일리안 셰퍼드"><option value="골든 리트리버"><option value="래브라도 리트리버"><option value="코커 스패니얼"><option value="웰시 코기"><option value="비글"><option value="포메라니안"><option value="믹스견"></datalist></div>
+                    <div class="form-group"><label>체고 (cm)</label><input type="number" id="heightInput" step="0.1" min="0" placeholder="예: 38.5"></div>
+                    <div class="form-group"><label>체급 (자동/수동)</label><select id="sizeClassInput"><option value="">체고 입력 시 자동</option><option value="T">T</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select></div>
+                </div>
+                <div class="btn-group"><button type="submit" class="btn btn-success">강아지 등록</button></div>
+            </form>
+
+            <!-- 검색 -->
+            <div class="card" style="margin-top:0;">
+                <div class="search-box">
+                    <input type="text" id="dogSearchInput" placeholder="강아지 이름으로 검색...">
+                </div>
+            </div>
+
+            <!-- 강아지 목록 -->
+            <div id="dogListArea" class="dog-list"></div>
+
+            <!-- 강아지 상세 프로필 + 기록 -->
+            <div id="dogDetailArea" class="dog-detail-area" style="display:none;">
+                <div class="dog-detail-back" id="dogDetailBack">&#x2190; 목록으로</div>
+                <div id="dogProfileArea"></div>
+                <div id="dogRecordsArea" class="record-list"></div>
+            </div>
+        </div>
+
+        <!-- ===== 게시판 ===== -->
+        <div id="tab-board" class="tab-content">
+            <div id="boardView">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;font-weight:700;">게시판</h2>
+                    <button class="btn btn-primary btn-sm" id="newPostBtn">글쓰기</button>
+                </div>
+                <div id="boardList"></div>
+            </div>
+            <div id="boardWrite" style="display:none;">
+                <form id="postForm" class="card">
+                    <div class="card-title" id="postFormTitle">새 글 작성</div>
+                    <div class="form-grid">
+                        <div class="form-group"><label>작성자 <span class="required">*</span></label><input type="text" id="postAuthor" placeholder="이름" required></div>
+                        <div class="form-group"><label>카테고리</label><select id="postCategory"><option value="일반">일반</option><option value="공지">공지사항</option><option value="후기">대회 후기</option><option value="질문">질문</option><option value="정보">정보 공유</option></select></div>
+                        <div class="form-group full-width"><label>제목 <span class="required">*</span></label><input type="text" id="postTitle" placeholder="제목을 입력하세요" required></div>
+                        <div class="form-group full-width"><label>내용 <span class="required">*</span></label><textarea id="postContent" style="min-height:150px;" placeholder="내용을 입력하세요" required></textarea></div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">등록</button>
+                        <button type="button" class="btn btn-outline" id="cancelPostBtn">취소</button>
+                    </div>
+                </form>
+            </div>
+            <div id="boardDetail" style="display:none;"></div>
+        </div>
+
+        <!-- ===== 관리자 ===== -->
+        <div id="tab-admin" class="tab-content">
+            <div id="adminLock">
+                <div class="card" style="max-width:360px;margin:2rem auto;text-align:center;">
+                    <div style="font-size:2.5rem;margin-bottom:0.75rem;">&#x1F512;</div>
+                    <h3 style="margin-bottom:0.5rem;">관리자 인증</h3>
+                    <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:1rem;">비밀번호를 입력하세요</p>
+                    <input type="password" id="adminPwInput" placeholder="비밀번호" style="width:100%;padding:0.7rem;border:1.5px solid var(--gray-200);border-radius:6px;font-size:1rem;text-align:center;letter-spacing:0.2em;margin-bottom:0.5rem;">
+                    <div class="error-msg" id="adminPwError" style="color:var(--danger);font-size:0.8rem;min-height:1.2em;"></div>
+                    <button class="btn btn-primary" id="adminLoginBtn" style="width:100%;margin-top:0.5rem;">로그인</button>
+                </div>
+            </div>
+            <div id="adminPanel" style="display:none;">
+                <div class="card">
+                    <div class="card-title">&#x2699; 관리자 패널</div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">데이터 현황</div>
+                        <div class="admin-stat-row" id="adminStats"></div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">비밀번호 변경</div>
+                        <div class="form-grid">
+                            <div class="form-group"><label>현재 비밀번호</label><input type="password" id="adminOldPw"></div>
+                            <div class="form-group"><label>새 비밀번호</label><input type="password" id="adminNewPw"></div>
+                        </div>
+                        <div class="btn-group"><button class="btn btn-primary btn-sm" id="changePwBtn">비밀번호 변경</button></div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">사이트 설정</div>
+                        <div class="form-grid">
+                            <div class="form-group full-width"><label>사이트 제목</label><input type="text" id="adminSiteTitle" placeholder="어질리티 대회 기록 아카이브"></div>
+                            <div class="form-group full-width"><label>사이트 설명</label><input type="text" id="adminSiteDesc" placeholder="KKF/FCI 규정 기반 · 대회 참가 결과 관리"></div>
+                        </div>
+                        <div class="btn-group"><button class="btn btn-primary btn-sm" id="saveSiteSettingsBtn">설정 저장</button></div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">데이터 관리</div>
+                        <div class="btn-group" style="flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" id="adminExportAll">전체 백업 (JSON)</button>
+                            <label class="btn btn-outline btn-sm" style="cursor:pointer;">전체 복원 (JSON)<input type="file" id="adminImportAll" accept=".json" style="display:none;"></label>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-danger-zone">
+                            <h4>위험 영역</h4>
+                            <p style="font-size:0.82rem;color:var(--gray-600);margin-bottom:0.75rem;">아래 작업은 되돌릴 수 없습니다.</p>
+                            <div class="btn-group" style="flex-wrap:wrap;">
+                                <button class="btn btn-danger btn-sm" id="adminClearRecords">기록 전체 삭제</button>
+                                <button class="btn btn-danger btn-sm" id="adminClearDogs">강아지 전체 삭제</button>
+                                <button class="btn btn-danger btn-sm" id="adminClearPosts">게시글 전체 삭제</button>
+                                <button class="btn btn-danger btn-sm" id="adminClearAll">모든 데이터 초기화</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1rem;text-align:right;">
+                        <button class="btn btn-outline btn-sm" id="adminLogoutBtn">로그아웃</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <h3 id="deleteModalTitle">삭제 확인</h3>
+            <p id="deleteModalMsg">이 항목을 삭제하시겠습니까?<br>삭제 후 복구할 수 없습니다.</p>
+            <div class="btn-group"><button class="btn btn-danger btn-sm" id="confirmDelete">삭제</button><button class="btn btn-outline btn-sm" id="cancelDelete">취소</button></div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ===== 저장소 키 =====
+        const RECORDS_KEY = 'agility_records';
+        const DOGS_KEY = 'agility_dogs';
+        const POSTS_KEY = 'agility_posts';
+        const SETTINGS_KEY = 'agility_settings';
+
+        function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
+        function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+        function loadObj(k) { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } }
+        function loadRecords() { return load(RECORDS_KEY); }
+        function saveRecords(r) { save(RECORDS_KEY, r); }
+        function loadDogs() { return load(DOGS_KEY); }
+        function saveDogs(d) { save(DOGS_KEY, d); }
+        function loadPosts() { return load(POSTS_KEY); }
+        function savePosts(p) { save(POSTS_KEY, p); }
+        function loadSettings() { const s = loadObj(SETTINGS_KEY); if (!s.adminPw) s.adminPw = '0403'; return s; }
+        function saveSettings(s) { save(SETTINGS_KEY, s); }
+        function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+
+        function heightToSize(h) { if (!h && h !== 0) return ''; h = parseFloat(h); if (isNaN(h)) return ''; if (h < 35) return 'S'; if (h < 43) return 'M'; if (h < 48) return 'I'; return 'L'; }
+        function showToast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function fmtDate(d) { if (!d) return ''; const dt = new Date(d); return dt.toLocaleDateString('ko-KR'); }
+
+        // 사이트 설정 적용
+        function applySiteSettings() {
+            const s = loadSettings();
+            if (s.siteTitle) document.querySelector('header h1').innerHTML = '&#x1F3C6; ' + escapeHtml(s.siteTitle);
+            if (s.siteDesc) document.querySelector('header p').textContent = s.siteDesc;
+        }
+        applySiteSettings();
+
+        // ===== 탭 =====
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'all') renderAllRecords();
+                if (btn.dataset.tab === 'dogs') { showDogListView(); renderDogList(); }
+                if (btn.dataset.tab === 'register') refreshDogSelect();
+                if (btn.dataset.tab === 'board') showBoardList();
+            });
+        });
+
+        // ===== 강아지 탭 - 통합 뷰 =====
+        let selectedDogId = null;
+
+        function showDogListView() {
+            selectedDogId = null;
+            document.getElementById('dogForm').style.display = '';
+            document.querySelector('#tab-dogs > .card').style.display = '';
+            document.getElementById('dogListArea').style.display = '';
+            document.getElementById('dogDetailArea').style.display = 'none';
+        }
+
+        function showDogDetailView(dogId) {
+            selectedDogId = dogId;
+            document.getElementById('dogForm').style.display = 'none';
+            document.querySelector('#tab-dogs > .card').style.display = 'none';
+            document.getElementById('dogListArea').style.display = 'none';
+            document.getElementById('dogDetailArea').style.display = '';
+            renderDogProfile(dogId);
+        }
+
+        document.getElementById('dogDetailBack').addEventListener('click', () => {
+            showDogListView();
+            renderDogList();
+        });
+
+        // 강아지 등록 폼
+        document.getElementById('heightInput').addEventListener('input', function() { const s = heightToSize(this.value); if (s) document.getElementById('sizeClassInput').value = s; });
+
+        document.getElementById('dogForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('dogNameInput').value.trim();
+            const breed = document.getElementById('breedInput').value.trim();
+            const height = document.getElementById('heightInput').value ? parseFloat(document.getElementById('heightInput').value) : null;
+            let sc = document.getElementById('sizeClassInput').value;
+            if (!sc && height !== null) sc = heightToSize(height);
+            const dogs = loadDogs(); dogs.push({ id: genId(), name, breed, height, sizeClass: sc, createdAt: new Date().toISOString() }); saveDogs(dogs);
+            showToast(`"${name}" 등록 완료!`); this.reset(); renderDogList();
+        });
+
+        // 검색 필터
+        document.getElementById('dogSearchInput').addEventListener('input', function() { renderDogList(); });
+
+        function renderDogList() {
+            const dogs = loadDogs();
+            const q = (document.getElementById('dogSearchInput').value || '').trim().toLowerCase();
+            const filtered = q ? dogs.filter(d => d.name.toLowerCase().includes(q) || (d.breed && d.breed.toLowerCase().includes(q))) : dogs;
+            const area = document.getElementById('dogListArea');
+            if (!filtered.length) {
+                area.innerHTML = q
+                    ? `<div class="empty-state"><div class="empty-state-icon">&#x1F50D;</div><div class="empty-state-text">"${escapeHtml(q)}" 검색 결과가 없습니다</div></div>`
+                    : '<div class="empty-state"><div class="empty-state-icon">&#x1F43E;</div><div class="empty-state-text">등록된 강아지가 없습니다</div></div>';
+                return;
+            }
+            const records = loadRecords();
+            area.innerHTML = filtered.map(dog => {
+                const cnt = records.filter(r => r.dogId === dog.id).length;
+                const meta = [dog.breed, dog.height ? `체고 ${dog.height}cm` : '', dog.sizeClass ? `체급 ${dog.sizeClass}` : '', `기록 ${cnt}건`].filter(Boolean).join(' · ');
+                return `<div class="dog-list-item" data-id="${dog.id}"><div class="dog-list-info"><span class="dog-list-name">&#x1F436; ${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-outline btn-sm dog-edit-btn" data-id="${dog.id}">수정</button><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
+            }).join('');
+
+            // 강아지 클릭 → 상세 보기
+            area.querySelectorAll('.dog-list-item').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    // 수정/삭제 버튼 클릭 시 상세보기 이동 방지
+                    if (e.target.closest('.dog-edit-btn') || e.target.closest('.dog-delete-btn')) return;
+                    showDogDetailView(el.dataset.id);
+                });
+            });
+
+            area.querySelectorAll('.dog-delete-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); pendingDeleteType = 'dog'; deleteTargetId = b.dataset.id; document.getElementById('deleteModalTitle').textContent = '강아지 삭제'; document.getElementById('deleteModalMsg').innerHTML = '이 강아지를 삭제하시겠습니까?'; document.getElementById('deleteModal').classList.add('show'); }));
+            area.querySelectorAll('.dog-edit-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); const dogs = loadDogs(); const dog = dogs.find(d => d.id === b.dataset.id); if (!dog) return; document.getElementById('dogNameInput').value = dog.name; document.getElementById('breedInput').value = dog.breed || ''; document.getElementById('heightInput').value = dog.height || ''; document.getElementById('sizeClassInput').value = dog.sizeClass || ''; saveDogs(dogs.filter(d => d.id !== dog.id)); renderDogList(); showToast('수정할 강아지를 불러왔습니다.'); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        }
+
+        // 강아지 상세 프로필 + 기록
+        function renderDogProfile(dogId) {
+            const dog = loadDogs().find(d => d.id === dogId);
+            if (!dog) { showDogListView(); return; }
+
+            const records = loadRecords().filter(r => r.dogId === dogId || r.dogName.toLowerCase() === dog.name.toLowerCase())
+                .sort((a, b) => (b.compDate || '').localeCompare(a.compDate || ''));
+            const cr = records.filter(r => r.result === '클린런').length;
+            const br = records.reduce((b, r) => (r.rank && (!b || r.rank < b)) ? r.rank : b, null);
+            const pr = records.filter(r => r.promoted === '승급').length;
+            const pm = [dog.breed, dog.sizeClass ? `체급 ${dog.sizeClass}` : '', dog.height ? `체고 ${dog.height}cm` : ''].filter(Boolean).join(' · ');
+
+            document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile"><div class="dog-profile-icon">&#x1F436;</div><div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div></div>`;
+
+            const ra = document.getElementById('dogRecordsArea');
+            if (!records.length) {
+                ra.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">아직 등록된 기록이 없습니다</div></div>';
+            } else {
+                ra.innerHTML = records.map(r => renderRecordItem(r, false)).join('');
+                attachRecordActions(ra);
+            }
+        }
+
+        // ===== 기록 등록 - 강아지 셀렉트 =====
+        function refreshDogSelect() {
+            const dogs = loadDogs(); const sel = document.getElementById('dogSelect'); const cv = sel.value;
+            sel.innerHTML = '<option value="">-- 강아지를 선택하세요 --</option>';
+            dogs.forEach(d => { const o = document.createElement('option'); o.value = d.id; o.textContent = `${d.name}` + (d.breed ? ` (${d.breed})` : '') + (d.sizeClass ? ` [${d.sizeClass}]` : ''); sel.appendChild(o); });
+            if (cv) sel.value = cv;
+        }
+        document.getElementById('dogSelect').addEventListener('change', function() {
+            const ib = document.getElementById('selectedDogInfo'); const ss = document.getElementById('sizeClass');
+            if (!this.value) { ib.classList.remove('show'); ib.innerHTML = ''; ss.value = ''; return; }
+            const dog = loadDogs().find(d => d.id === this.value); if (!dog) return;
+            ib.innerHTML = `&#x1F436; <strong>${escapeHtml(dog.name)}</strong> &mdash; ${[dog.breed ? `품종: ${escapeHtml(dog.breed)}` : '', dog.height ? `체고: ${dog.height}cm` : '', dog.sizeClass ? `체급: ${dog.sizeClass}` : ''].filter(Boolean).join(' &middot; ')}`;
+            ib.classList.add('show'); if (dog.sizeClass) ss.value = dog.sizeClass;
+        });
+
+        // ===== 자동 결과 판정 =====
+        const fI = document.getElementById('faults'), rI = document.getElementById('refusals'), pI = document.getElementById('penalties');
+        const resS = document.getElementById('result'), elimS = document.getElementById('eliminationReason'), autoN = document.getElementById('autoResultNotice');
+        let userOverrode = false;
+        function autoJudge() {
+            const f = parseInt(fI.value) || 0, r = parseInt(rI.value) || 0; pI.value = (f + r) * 5;
+            if (!userOverrode) {
+                if (r >= 3) { resS.value = '실격'; elimS.disabled = false; elimS.value = '거부 3회'; autoN.textContent = '거부 3회 이상 → 실격 자동 판정 (변경 가능)'; autoN.classList.add('show'); }
+                else if (f === 0 && r === 0) { resS.value = '클린런'; elimS.disabled = true; elimS.value = ''; autoN.textContent = '실책·거부 0회 → 클린런 자동 판정 (변경 가능)'; autoN.classList.add('show'); }
+                else { resS.value = '완주'; elimS.disabled = true; elimS.value = ''; autoN.textContent = '실책/거부 있음 → 완주 자동 판정 (변경 가능)'; autoN.classList.add('show'); }
+            }
+        }
+        fI.addEventListener('input', () => { userOverrode = false; autoJudge(); });
+        rI.addEventListener('input', () => { userOverrode = false; autoJudge(); });
+        resS.addEventListener('change', () => { userOverrode = true; autoN.classList.remove('show'); elimS.disabled = resS.value !== '실격'; if (resS.value !== '실격') elimS.value = ''; });
+
+        // ===== 기록 등록 =====
+        document.getElementById('recordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dogId = document.getElementById('dogSelect').value; if (!dogId) { showToast('강아지를 선택해주세요'); return; }
+            const dog = loadDogs().find(d => d.id === dogId);
+            const rec = { id: genId(), dogId, dogName: dog ? dog.name : '', breed: dog ? (dog.breed || '') : '',
+                compDate: document.getElementById('compDate').value, compName: document.getElementById('compName').value.trim(),
+                organizer: document.getElementById('organizer').value.trim(), venue: document.getElementById('venue').value.trim(),
+                eventType: document.getElementById('eventType').value, level: document.getElementById('level').value,
+                sizeClass: document.getElementById('sizeClass').value || (dog ? dog.sizeClass : ''), matchType: document.getElementById('matchType').value,
+                rank: document.getElementById('rank').value ? parseInt(document.getElementById('rank').value) : null,
+                totalEntries: document.getElementById('totalEntries').value ? parseInt(document.getElementById('totalEntries').value) : null,
+                runTime: document.getElementById('runTime').value ? parseFloat(document.getElementById('runTime').value) : null,
+                standardTime: document.getElementById('standardTime').value ? parseFloat(document.getElementById('standardTime').value) : null,
+                faults: parseInt(fI.value) || 0, refusals: parseInt(rI.value) || 0, penalties: pI.value ? parseFloat(pI.value) : 0,
+                result: resS.value, eliminationReason: elimS.value, promoted: document.getElementById('promoted').value,
+                memo: document.getElementById('memo').value.trim(), createdAt: new Date().toISOString() };
+            const recs = loadRecords(); recs.push(rec); saveRecords(recs);
+            showToast('기록이 등록되었습니다!'); this.reset(); elimS.disabled = true; fI.value = '0'; rI.value = '0'; userOverrode = false; autoN.classList.remove('show');
+            document.getElementById('selectedDogInfo').classList.remove('show'); document.getElementById('sizeClass').value = ''; refreshDogSelect();
+        });
+
+        // ===== 기록 카드 렌더링 =====
+        function renderRecordItem(rec, showName) {
+            const rk = rec.rank ? `${rec.rank}등` + (rec.totalEntries ? ` / ${rec.totalEntries}두` : '') : '-';
+            const tm = rec.runTime ? `${rec.runTime}초` + (rec.standardTime ? ` (기준 ${rec.standardTime}초)` : '') : '-';
+            const rt = rec.result === '실격' ? `<span class="tag tag-eliminated">${rec.result}${rec.eliminationReason ? ' - ' + rec.eliminationReason : ''}</span>` : rec.result === '클린런' ? '<span class="tag tag-rank">&#x2705; 클린런</span>' : '';
+            return `<div class="record-item" data-id="${rec.id}"><div class="record-header"><div>${showName ? `<span class="record-dog-name">${escapeHtml(rec.dogName)}</span>` : ''}${rec.breed ? `<span style="font-size:0.8rem;color:var(--gray-500);margin-left:0.3rem;">${escapeHtml(rec.breed)}</span>` : ''}<span class="record-date">${rec.compDate || ''}</span></div></div><div class="record-competition">${escapeHtml(rec.compName)}${rec.organizer ? ' &middot; ' + escapeHtml(rec.organizer) : ''}${rec.venue ? ' &middot; ' + escapeHtml(rec.venue) : ''}</div><div class="record-tags"><span class="tag tag-event">${rec.eventType}</span><span class="tag tag-level">${rec.level}</span><span class="tag tag-size">${rec.sizeClass}</span>${rec.matchType ? `<span class="tag tag-level">${rec.matchType}</span>` : ''}${rt}${rec.promoted === '승급' ? '<span class="tag tag-rank">&#x2B06; 승급</span>' : ''}</div><div class="record-stats"><div class="stat"><div class="stat-label">등수</div><div class="stat-value">${rk}</div></div><div class="stat"><div class="stat-label">주행 시간</div><div class="stat-value">${tm}</div></div><div class="stat"><div class="stat-label">실책</div><div class="stat-value">${rec.faults}</div></div><div class="stat"><div class="stat-label">거부</div><div class="stat-value">${rec.refusals}</div></div><div class="stat"><div class="stat-label">감점</div><div class="stat-value">${rec.penalties}</div></div></div>${rec.memo ? `<div class="record-memo">${escapeHtml(rec.memo)}</div>` : ''}<div class="record-actions"><button class="btn btn-outline btn-sm edit-btn" data-id="${rec.id}">수정</button><button class="btn btn-danger btn-sm delete-btn" data-id="${rec.id}">삭제</button></div></div>`;
+        }
+
+        // ===== 전체 기록 =====
+        let sortAsc = false;
+        function renderAllRecords() {
+            const recs = loadRecords(); const lf = document.getElementById('filterLevel').value; const sf = document.getElementById('filterSize').value; const ef = document.getElementById('filterEvent').value;
+            let f = recs.filter(r => { if (lf && r.level !== lf) return false; if (sf && r.sizeClass !== sf) return false; if (ef && r.eventType !== ef) return false; return true; });
+            f.sort((a, b) => { const c = (a.compDate || '').localeCompare(b.compDate || ''); return sortAsc ? c : -c; });
+            const sa = document.getElementById('summaryArea'); const cl = f.filter(r => r.result === '클린런').length; const el = f.filter(r => r.result === '실격').length; const ud = new Set(f.map(r => r.dogName)).size;
+            sa.innerHTML = `<div class="summary-grid"><div class="summary-card"><div class="summary-card-value">${f.length}</div><div class="summary-card-label">총 기록 수</div></div><div class="summary-card"><div class="summary-card-value">${ud}</div><div class="summary-card-label">등록 강아지</div></div><div class="summary-card"><div class="summary-card-value">${cl}</div><div class="summary-card-label">클린런</div></div><div class="summary-card"><div class="summary-card-value">${el}</div><div class="summary-card-label">실격</div></div></div>`;
+            const ct = document.getElementById('allRecords');
+            if (!f.length) { ct.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">등록된 기록이 없습니다</div></div>'; return; }
+            ct.innerHTML = f.map(r => renderRecordItem(r, true)).join(''); attachRecordActions(ct);
+        }
+        document.getElementById('filterLevel').addEventListener('change', renderAllRecords);
+        document.getElementById('filterSize').addEventListener('change', renderAllRecords);
+        document.getElementById('filterEvent').addEventListener('change', renderAllRecords);
+        document.getElementById('sortBtn').addEventListener('click', () => { sortAsc = !sortAsc; document.getElementById('sortBtn').innerHTML = sortAsc ? '오래된순 &#x25B2;' : '최신순 &#x25BC;'; renderAllRecords(); });
+
+        // ===== 삭제 =====
+        let deleteTargetId = null, pendingDeleteType = 'record';
+        function attachRecordActions(ct) {
+            ct.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', () => { pendingDeleteType = 'record'; deleteTargetId = b.dataset.id; document.getElementById('deleteModalTitle').textContent = '기록 삭제'; document.getElementById('deleteModalMsg').innerHTML = '이 기록을 삭제하시겠습니까?'; document.getElementById('deleteModal').classList.add('show'); }));
+            ct.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', () => editRecord(b.dataset.id)));
+        }
+        document.getElementById('confirmDelete').addEventListener('click', () => {
+            if (!deleteTargetId) return;
+            if (pendingDeleteType === 'record') {
+                saveRecords(loadRecords().filter(r => r.id !== deleteTargetId)); showToast('기록 삭제됨'); renderAllRecords();
+                if (selectedDogId) renderDogProfile(selectedDogId);
+            }
+            else if (pendingDeleteType === 'dog') { saveDogs(loadDogs().filter(d => d.id !== deleteTargetId)); showToast('강아지 삭제됨'); renderDogList(); refreshDogSelect(); }
+            else if (pendingDeleteType === 'post') { savePosts(loadPosts().filter(p => p.id !== deleteTargetId)); showToast('게시글 삭제됨'); showBoardList(); }
+            deleteTargetId = null; document.getElementById('deleteModal').classList.remove('show');
+        });
+        document.getElementById('cancelDelete').addEventListener('click', () => { deleteTargetId = null; document.getElementById('deleteModal').classList.remove('show'); });
+
+        // ===== 수정 =====
+        function editRecord(id) {
+            const recs = loadRecords(); const rec = recs.find(r => r.id === id); if (!rec) return;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="register"]').classList.add('active'); document.getElementById('tab-register').classList.add('active');
+            refreshDogSelect();
+            if (rec.dogId) { document.getElementById('dogSelect').value = rec.dogId; document.getElementById('dogSelect').dispatchEvent(new Event('change')); }
+            document.getElementById('compDate').value = rec.compDate; document.getElementById('compName').value = rec.compName;
+            document.getElementById('organizer').value = rec.organizer || ''; document.getElementById('venue').value = rec.venue || '';
+            document.getElementById('eventType').value = rec.eventType; document.getElementById('level').value = rec.level;
+            document.getElementById('sizeClass').value = rec.sizeClass; document.getElementById('matchType').value = rec.matchType || '';
+            document.getElementById('rank').value = rec.rank || ''; document.getElementById('totalEntries').value = rec.totalEntries || '';
+            document.getElementById('runTime').value = rec.runTime || ''; document.getElementById('standardTime').value = rec.standardTime || '';
+            fI.value = rec.faults; rI.value = rec.refusals; pI.value = rec.penalties; resS.value = rec.result;
+            document.getElementById('promoted').value = rec.promoted || '해당없음'; document.getElementById('memo').value = rec.memo || '';
+            userOverrode = true; autoN.classList.remove('show');
+            if (rec.result === '실격') { elimS.disabled = false; elimS.value = rec.eliminationReason || ''; } else { elimS.disabled = true; }
+            saveRecords(recs.filter(r => r.id !== id));
+            showToast('수정할 기록을 불러왔습니다.'); window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ===== 게시판 =====
+        function showBoardList() {
+            document.getElementById('boardView').style.display = ''; document.getElementById('boardWrite').style.display = 'none'; document.getElementById('boardDetail').style.display = 'none';
+            const posts = loadPosts().sort((a, b) => { if (a.category === '공지' && b.category !== '공지') return -1; if (a.category !== '공지' && b.category === '공지') return 1; return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+            const area = document.getElementById('boardList');
+            if (!posts.length) { area.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4DD;</div><div class="empty-state-text">게시글이 없습니다</div></div>'; return; }
+            area.innerHTML = posts.map(p => `<div class="post-item${p.category === '공지' ? ' pinned' : ''}" data-id="${p.id}"><div class="post-title-row">${p.category === '공지' ? '<span class="tag tag-notice">공지</span>' : p.category ? `<span class="tag tag-event">${escapeHtml(p.category)}</span>` : ''}<span class="post-title">${escapeHtml(p.title)}</span></div><div class="post-meta">${escapeHtml(p.author || '익명')} &middot; ${fmtDate(p.createdAt)}</div></div>`).join('');
+            area.querySelectorAll('.post-item').forEach(el => el.addEventListener('click', () => showPostDetail(el.dataset.id)));
+        }
+
+        function showPostDetail(id) {
+            const post = loadPosts().find(p => p.id === id); if (!post) return;
+            document.getElementById('boardView').style.display = 'none'; document.getElementById('boardWrite').style.display = 'none';
+            const area = document.getElementById('boardDetail'); area.style.display = '';
+            area.innerHTML = `<div class="post-detail"><div class="post-title-row">${post.category ? `<span class="tag tag-${post.category === '공지' ? 'notice' : 'event'}">${escapeHtml(post.category)}</span>` : ''}<span class="post-title">${escapeHtml(post.title)}</span></div><div class="post-meta">${escapeHtml(post.author || '익명')} &middot; ${fmtDate(post.createdAt)}</div><div class="post-body">${escapeHtml(post.content)}</div><div class="btn-group"><button class="btn btn-outline btn-sm" id="backToBoardBtn">목록으로</button><button class="btn btn-outline btn-sm" id="editPostBtn">수정</button><button class="btn btn-danger btn-sm" id="deletePostBtn">삭제</button></div></div>`;
+            document.getElementById('backToBoardBtn').addEventListener('click', showBoardList);
+            document.getElementById('deletePostBtn').addEventListener('click', () => { pendingDeleteType = 'post'; deleteTargetId = id; document.getElementById('deleteModalTitle').textContent = '게시글 삭제'; document.getElementById('deleteModalMsg').innerHTML = '이 게시글을 삭제하시겠습니까?'; document.getElementById('deleteModal').classList.add('show'); });
+            document.getElementById('editPostBtn').addEventListener('click', () => { showPostWrite(post); });
+        }
+
+        let editingPostId = null;
+        function showPostWrite(post) {
+            document.getElementById('boardView').style.display = 'none'; document.getElementById('boardDetail').style.display = 'none'; document.getElementById('boardWrite').style.display = '';
+            if (post) { editingPostId = post.id; document.getElementById('postFormTitle').textContent = '글 수정'; document.getElementById('postAuthor').value = post.author || ''; document.getElementById('postCategory').value = post.category || '일반'; document.getElementById('postTitle').value = post.title; document.getElementById('postContent').value = post.content; }
+            else { editingPostId = null; document.getElementById('postFormTitle').textContent = '새 글 작성'; document.getElementById('postForm').reset(); }
+        }
+
+        document.getElementById('newPostBtn').addEventListener('click', () => showPostWrite(null));
+        document.getElementById('cancelPostBtn').addEventListener('click', showBoardList);
+
+        document.getElementById('postForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const posts = loadPosts();
+            const data = { author: document.getElementById('postAuthor').value.trim(), category: document.getElementById('postCategory').value, title: document.getElementById('postTitle').value.trim(), content: document.getElementById('postContent').value.trim() };
+            if (editingPostId) {
+                const idx = posts.findIndex(p => p.id === editingPostId);
+                if (idx >= 0) { Object.assign(posts[idx], data, { updatedAt: new Date().toISOString() }); }
+                savePosts(posts); showToast('게시글이 수정되었습니다'); editingPostId = null;
+            } else {
+                posts.push({ id: genId(), ...data, createdAt: new Date().toISOString() });
+                savePosts(posts); showToast('게시글이 등록되었습니다');
+            }
+            this.reset(); showBoardList();
+        });
+
+        // ===== 관리자 =====
+        let isAdminLoggedIn = false;
+
+        document.getElementById('adminLoginBtn').addEventListener('click', doAdminLogin);
+        document.getElementById('adminPwInput').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+
+        function doAdminLogin() {
+            const pw = document.getElementById('adminPwInput').value;
+            const settings = loadSettings();
+            if (pw === settings.adminPw) {
+                isAdminLoggedIn = true;
+                document.getElementById('adminLock').style.display = 'none';
+                document.getElementById('adminPanel').style.display = '';
+                document.getElementById('adminPwInput').value = '';
+                document.getElementById('adminPwError').textContent = '';
+                renderAdminPanel();
+            } else {
+                document.getElementById('adminPwError').textContent = '비밀번호가 틀렸습니다.';
+            }
+        }
+
+        document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+            isAdminLoggedIn = false;
+            document.getElementById('adminLock').style.display = '';
+            document.getElementById('adminPanel').style.display = 'none';
+            showToast('로그아웃 되었습니다');
+        });
+
+        function renderAdminPanel() {
+            const recs = loadRecords(), dogs = loadDogs(), posts = loadPosts(), settings = loadSettings();
+            document.getElementById('adminStats').innerHTML = `<div class="admin-stat"><div class="admin-stat-val">${dogs.length}</div><div class="admin-stat-lbl">강아지</div></div><div class="admin-stat"><div class="admin-stat-val">${recs.length}</div><div class="admin-stat-lbl">기록</div></div><div class="admin-stat"><div class="admin-stat-val">${posts.length}</div><div class="admin-stat-lbl">게시글</div></div>`;
+            document.getElementById('adminSiteTitle').value = settings.siteTitle || '';
+            document.getElementById('adminSiteDesc').value = settings.siteDesc || '';
+        }
+
+        // 비밀번호 변경
+        document.getElementById('changePwBtn').addEventListener('click', () => {
+            const old = document.getElementById('adminOldPw').value;
+            const nw = document.getElementById('adminNewPw').value;
+            const settings = loadSettings();
+            if (old !== settings.adminPw) { showToast('현재 비밀번호가 틀렸습니다'); return; }
+            if (!nw || nw.length < 2) { showToast('새 비밀번호를 2자 이상 입력하세요'); return; }
+            settings.adminPw = nw; saveSettings(settings);
+            document.getElementById('adminOldPw').value = ''; document.getElementById('adminNewPw').value = '';
+            showToast('비밀번호가 변경되었습니다');
+        });
+
+        // 사이트 설정
+        document.getElementById('saveSiteSettingsBtn').addEventListener('click', () => {
+            const settings = loadSettings();
+            settings.siteTitle = document.getElementById('adminSiteTitle').value.trim();
+            settings.siteDesc = document.getElementById('adminSiteDesc').value.trim();
+            saveSettings(settings); applySiteSettings(); showToast('사이트 설정이 저장되었습니다');
+        });
+
+        // 전체 백업/복원
+        document.getElementById('adminExportAll').addEventListener('click', () => {
+            const data = { dogs: loadDogs(), records: loadRecords(), posts: loadPosts(), settings: loadSettings() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a');
+            a.href = url; a.download = `agility_full_backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+            showToast('전체 백업 완료');
+        });
+        document.getElementById('adminImportAll').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const d = JSON.parse(ev.target.result);
+                    if (d.dogs) saveDogs(d.dogs); if (d.records) saveRecords(d.records); if (d.posts) savePosts(d.posts);
+                    if (d.settings) { const s = loadSettings(); Object.assign(s, d.settings); saveSettings(s); applySiteSettings(); }
+                    renderAdminPanel(); renderAllRecords(); renderDogList(); refreshDogSelect(); showBoardList();
+                    showToast('전체 복원 완료');
+                } catch { showToast('파일 형식이 올바르지 않습니다'); }
+            };
+            reader.readAsText(file); this.value = '';
+        });
+
+        // 위험 영역
+        document.getElementById('adminClearRecords').addEventListener('click', () => { if (confirm('모든 기록을 삭제하시겠습니까?')) { saveRecords([]); renderAdminPanel(); renderAllRecords(); showToast('기록 전체 삭제됨'); } });
+        document.getElementById('adminClearDogs').addEventListener('click', () => { if (confirm('모든 강아지를 삭제하시겠습니까?')) { saveDogs([]); renderAdminPanel(); renderDogList(); refreshDogSelect(); showToast('강아지 전체 삭제됨'); } });
+        document.getElementById('adminClearPosts').addEventListener('click', () => { if (confirm('모든 게시글을 삭제하시겠습니까?')) { savePosts([]); renderAdminPanel(); showBoardList(); showToast('게시글 전체 삭제됨'); } });
+        document.getElementById('adminClearAll').addEventListener('click', () => { if (confirm('정말 모든 데이터를 초기화하시겠습니까?\n(비밀번호 포함 모두 삭제됩니다)')) { localStorage.removeItem(RECORDS_KEY); localStorage.removeItem(DOGS_KEY); localStorage.removeItem(POSTS_KEY); localStorage.removeItem(SETTINGS_KEY); renderAdminPanel(); renderAllRecords(); renderDogList(); refreshDogSelect(); showBoardList(); applySiteSettings(); showToast('모든 데이터 초기화됨'); } });
+
+        // ===== 내보내기 / 가져오기 (전체 기록 탭) =====
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = { dogs: loadDogs(), records: loadRecords() };
+            if (!data.records.length && !data.dogs.length) { showToast('내보낼 데이터가 없습니다'); return; }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a');
+            a.href = url; a.download = `agility_archive_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); showToast('JSON 내보내기 완료');
+        });
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            const recs = loadRecords(); if (!recs.length) { showToast('내보낼 기록이 없습니다'); return; }
+            const h = ['강아지이름','품종','대회날짜','대회명','주최','장소','종목','난이도','체급','경기유형','등수','참가두수','주행시간(초)','표준시간(초)','실책','거부','감점','결과','실격사유','승급','메모'];
+            const rows = recs.map(r => [r.dogName, r.breed || '', r.compDate, r.compName, r.organizer, r.venue, r.eventType, r.level, r.sizeClass, r.matchType, r.rank || '', r.totalEntries || '', r.runTime || '', r.standardTime || '', r.faults, r.refusals, r.penalties, r.result, r.eliminationReason, r.promoted, r.memo].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+            const csv = '\uFEFF' + [h.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a');
+            a.href = url; a.download = `agility_records_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url); showToast('CSV 내보내기 완료');
+        });
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = function(ev) { try { const imp = JSON.parse(ev.target.result);
+                if (imp.dogs && imp.records) { const ed = loadDogs(), ei = new Set(ed.map(d => d.id)); let ad = 0; imp.dogs.forEach(d => { if (d.name && !ei.has(d.id)) { if (!d.id) d.id = genId(); ed.push(d); ad++; } }); saveDogs(ed); const er = loadRecords(), eri = new Set(er.map(r => r.id)); let ar = 0; imp.records.forEach(r => { if (r.dogName && r.compName && !eri.has(r.id)) { if (!r.id) r.id = genId(); er.push(r); ar++; } }); saveRecords(er); showToast(`강아지 ${ad}건, 기록 ${ar}건 가져옴`); }
+                else if (Array.isArray(imp)) { const ex = loadRecords(), exi = new Set(ex.map(r => r.id)); let a = 0; imp.forEach(r => { if (r.dogName && r.compName && !exi.has(r.id)) { if (!r.id) r.id = genId(); ex.push(r); a++; } }); saveRecords(ex); showToast(`${a}건의 기록을 가져왔습니다`); }
+                else throw new Error('Invalid');
+                renderAllRecords(); renderDogList(); refreshDogSelect();
+            } catch { showToast('파일 형식이 올바르지 않습니다'); } }; reader.readAsText(file); this.value = '';
+        });
+
+        // ===== 초기화 =====
+        document.getElementById('compDate').valueAsDate = new Date();
+        renderAllRecords(); renderDogList(); refreshDogSelect(); showBoardList();
+
+    })();
+    </script>
+</body>
+</html>
