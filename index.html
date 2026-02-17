@@ -328,6 +328,7 @@
                 </div>
                 <div class="form-grid">
                     <div class="form-group"><label>이름 <span class="required">*</span></label><input type="text" id="dogNameInput" placeholder="예: 초코" required></div>
+                    <div class="form-group"><label>핸들러 (주인)</label><input type="text" id="handlerInput" placeholder="예: 홍길동"></div>
                     <div class="form-group"><label>품종</label><input type="text" id="breedInput" placeholder="예: 보더콜리" list="breedList"><datalist id="breedList"><option value="보더콜리"><option value="셔틀랜드 쉽독"><option value="미니어처 푸들"><option value="토이 푸들"><option value="스탠다드 푸들"><option value="잭 러셀 테리어"><option value="파피용"><option value="말리노이즈"><option value="오스트레일리안 셰퍼드"><option value="골든 리트리버"><option value="래브라도 리트리버"><option value="코커 스패니얼"><option value="웰시 코기"><option value="비글"><option value="포메라니안"><option value="믹스견"></datalist></div>
                     <div class="form-group"><label>체고 (cm)</label><input type="number" id="heightInput" step="0.1" min="0" placeholder="예: 38.5"></div>
                     <div class="form-group"><label>체급 (자동/수동)</label><select id="sizeClassInput"><option value="">체고 입력 시 자동</option><option value="T">T</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select></div>
@@ -661,12 +662,13 @@
         document.getElementById('dogForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('dogNameInput').value.trim();
+            const handler = document.getElementById('handlerInput').value.trim();
             const breed = document.getElementById('breedInput').value.trim();
             const height = document.getElementById('heightInput').value ? parseFloat(document.getElementById('heightInput').value) : null;
             let sc = document.getElementById('sizeClassInput').value;
             if (!sc && height !== null) sc = heightToSize(height);
             try {
-                await db.collection('dogs').add({ name, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', createdAt: new Date().toISOString() });
+                await db.collection('dogs').add({ name, handler, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', createdAt: new Date().toISOString() });
                 showToast(`"${name}" 등록 완료!`); this.reset();
                 dogPhotoBase64 = ''; photoInput.value = '';
                 photoPreview.src = ''; photoPreview.classList.remove('show');
@@ -687,7 +689,7 @@
             }
             area.innerHTML = filtered.map(dog => {
                 const cnt = cachedRecords.filter(r => r.dogId === dog.id).length;
-                const meta = [dog.breed, dog.height ? `체고 ${dog.height}cm` : '', dog.sizeClass ? `체급 ${dog.sizeClass}` : '', `기록 ${cnt}건`].filter(Boolean).join(' · ');
+                const meta = [dog.handler ? `핸들러: ${dog.handler}` : '', dog.breed, dog.height ? `체고 ${dog.height}cm` : '', dog.sizeClass ? `체급 ${dog.sizeClass}` : '', `기록 ${cnt}건`].filter(Boolean).join(' · ');
                 const thumb = dog.photo ? `<img class="dog-list-thumb" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-list-thumb-placeholder">&#x1F436;</div>`;
                 return `<div class="dog-list-item" data-id="${dog.id}">${thumb}<div class="dog-list-info"><span class="dog-list-name">${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
             }).join('');
@@ -709,7 +711,7 @@
             const cr = records.filter(r => r.result === '클린런').length;
             const br = records.reduce((b, r) => (r.rank && (!b || r.rank < b)) ? r.rank : b, null);
             const pr = records.filter(r => r.promoted === '승급').length;
-            const pm = [dog.breed, dog.sizeClass ? `체급 ${dog.sizeClass}` : '', dog.height ? `체고 ${dog.height}cm` : ''].filter(Boolean).join(' · ');
+            const pm = [dog.handler ? `핸들러: ${dog.handler}` : '', dog.breed, dog.sizeClass ? `체급 ${dog.sizeClass}` : '', dog.height ? `체고 ${dog.height}cm` : ''].filter(Boolean).join(' · ');
             const profilePic = dog.photo ? `<img class="dog-profile-img" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-profile-icon">&#x1F436;</div>`;
             document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile">${profilePic}<div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div></div>`;
             const ra = document.getElementById('dogRecordsArea');
