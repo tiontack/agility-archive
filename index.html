@@ -387,7 +387,7 @@
         function setupRealtimeListeners() {
             db.collection('dogs').onSnapshot(snap => {
                 cachedDogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderDogList(); refreshDogSelect();
+                renderDogList(); refreshDogSelect(); renderAllRecords();
             });
             db.collection('records').onSnapshot(snap => {
                 cachedRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -600,8 +600,8 @@
             const lf = document.getElementById('filterLevel').value; const sf = document.getElementById('filterSize').value; const ef = document.getElementById('filterEvent').value;
             let f = cachedRecords.filter(r => { if (lf && r.level !== lf) return false; if (sf && r.sizeClass !== sf) return false; if (ef && r.eventType !== ef) return false; return true; });
             f.sort((a, b) => { const c = (a.compDate || '').localeCompare(b.compDate || ''); return sortAsc ? c : -c; });
-            const sa = document.getElementById('summaryArea'); const cl = f.filter(r => r.result === '클린런').length; const el = f.filter(r => r.result === '실격').length; const ud = new Set(f.map(r => r.dogName)).size;
-            sa.innerHTML = `<div class="summary-grid"><div class="summary-card"><div class="summary-card-value">${f.length}</div><div class="summary-card-label">총 기록 수</div></div><div class="summary-card"><div class="summary-card-value">${ud}</div><div class="summary-card-label">등록 강아지</div></div><div class="summary-card"><div class="summary-card-value">${cl}</div><div class="summary-card-label">클린런</div></div><div class="summary-card"><div class="summary-card-value">${el}</div><div class="summary-card-label">실격</div></div></div>`;
+            const sa = document.getElementById('summaryArea'); const cl = f.filter(r => r.result === '클린런').length; const el = f.filter(r => r.result === '실격').length;
+            sa.innerHTML = `<div class="summary-grid"><div class="summary-card"><div class="summary-card-value">${f.length}</div><div class="summary-card-label">총 기록 수</div></div><div class="summary-card"><div class="summary-card-value">${cachedDogs.length}</div><div class="summary-card-label">등록 강아지</div></div><div class="summary-card"><div class="summary-card-value">${cl}</div><div class="summary-card-label">클린런</div></div><div class="summary-card"><div class="summary-card-value">${el}</div><div class="summary-card-label">실격</div></div></div>`;
             const ct = document.getElementById('allRecords');
             if (!f.length) { ct.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">등록된 기록이 없습니다</div></div>'; return; }
             ct.innerHTML = f.map(r => renderRecordItem(r, true)).join(''); attachRecordActions(ct);
