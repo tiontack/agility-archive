@@ -102,7 +102,20 @@
         .record-actions { display: flex; justify-content: flex-end; gap: 0.35rem; margin-top: 0.5rem; }
         .dog-profile { text-align: center; padding: 1.5rem; background: linear-gradient(135deg, var(--primary-light) 0%, #ede9fe 100%); border-radius: var(--radius); margin-bottom: 1rem; }
         .dog-profile-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .dog-profile-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: var(--shadow-md); margin-bottom: 0.5rem; }
         .dog-profile-name { font-size: 1.3rem; font-weight: 700; color: var(--gray-900); }
+        .photo-upload-area { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .photo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gray-200); display: none; }
+        .photo-preview.show { display: block; }
+        .photo-placeholder { width: 80px; height: 80px; border-radius: 50%; background: var(--gray-100); border: 2px dashed var(--gray-300); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--gray-400); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .photo-placeholder:hover { border-color: var(--primary); background: var(--primary-light); }
+        .photo-placeholder.hidden { display: none; }
+        .photo-input { display: none; }
+        .photo-btns { display: flex; gap: 0.35rem; }
+        .photo-btns .btn { padding: 0.25rem 0.6rem; font-size: 0.73rem; }
+        .dog-list-thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--gray-200); flex-shrink: 0; }
+        .dog-list-thumb-placeholder { width: 36px; height: 36px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .dog-list-item { display: flex; align-items: center; gap: 0.75rem; }
         .dog-profile-stats { display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
         .profile-stat { text-align: center; }
         .profile-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
@@ -132,9 +145,9 @@
         .summary-card-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.15rem; }
         .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
         .dog-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
-        .dog-list-item { display: flex; justify-content: space-between; align-items: center; background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 0.75rem 1rem; transition: box-shadow 0.2s; cursor: pointer; }
+        .dog-list-item { background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 0.75rem 1rem; transition: box-shadow 0.2s; cursor: pointer; }
         .dog-list-item:hover { box-shadow: var(--shadow-md); }
-        .dog-list-info { display: flex; flex-direction: column; }
+        .dog-list-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .dog-list-name { font-weight: 700; font-size: 0.95rem; color: var(--gray-900); }
         .dog-list-meta { font-size: 0.8rem; color: var(--gray-500); }
         .dog-list-actions { display: flex; gap: 0.35rem; }
@@ -301,6 +314,18 @@
         <div id="tab-dogs" class="tab-content">
             <form id="dogForm" class="card">
                 <div class="card-title">강아지 등록</div>
+                <div class="form-group full-width" style="align-items:center;margin-bottom:1rem;">
+                    <label style="text-align:center;">프로필 사진</label>
+                    <div class="photo-upload-area">
+                        <div class="photo-placeholder" id="photoPlaceholder" title="사진 선택">&#x1F4F7;</div>
+                        <img class="photo-preview" id="photoPreview" alt="미리보기">
+                        <input type="file" id="photoInput" class="photo-input" accept="image/*">
+                        <div class="photo-btns">
+                            <button type="button" class="btn btn-outline btn-sm" id="photoSelectBtn">사진 선택</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="photoRemoveBtn" style="display:none;">삭제</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-grid">
                     <div class="form-group"><label>이름 <span class="required">*</span></label><input type="text" id="dogNameInput" placeholder="예: 초코" required></div>
                     <div class="form-group"><label>품종</label><input type="text" id="breedInput" placeholder="예: 보더콜리" list="breedList"><datalist id="breedList"><option value="보더콜리"><option value="셔틀랜드 쉽독"><option value="미니어처 푸들"><option value="토이 푸들"><option value="스탠다드 푸들"><option value="잭 러셀 테리어"><option value="파피용"><option value="말리노이즈"><option value="오스트레일리안 셰퍼드"><option value="골든 리트리버"><option value="래브라도 리트리버"><option value="코커 스패니얼"><option value="웰시 코기"><option value="비글"><option value="포메라니안"><option value="믹스견"></datalist></div>
@@ -583,6 +608,56 @@
         document.getElementById('dogDetailBack').addEventListener('click', () => { showDogListView(); renderDogList(); });
         document.getElementById('heightInput').addEventListener('input', function() { const s = heightToSize(this.value); if (s) document.getElementById('sizeClassInput').value = s; });
 
+        // ===== 프로필 사진 =====
+        let dogPhotoBase64 = '';
+        function resizeImage(file, maxSize, quality) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+                        else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        const photoInput = document.getElementById('photoInput');
+        const photoPreview = document.getElementById('photoPreview');
+        const photoPlaceholder = document.getElementById('photoPlaceholder');
+        const photoRemoveBtn = document.getElementById('photoRemoveBtn');
+
+        document.getElementById('photoSelectBtn').addEventListener('click', () => photoInput.click());
+        photoPlaceholder.addEventListener('click', () => photoInput.click());
+
+        photoInput.addEventListener('change', async function() {
+            if (!this.files || !this.files[0]) return;
+            const file = this.files[0];
+            if (file.size > 10 * 1024 * 1024) { showToast('10MB 이하의 이미지만 가능합니다'); this.value = ''; return; }
+            try {
+                dogPhotoBase64 = await resizeImage(file, 300, 0.7);
+                photoPreview.src = dogPhotoBase64;
+                photoPreview.classList.add('show');
+                photoPlaceholder.classList.add('hidden');
+                photoRemoveBtn.style.display = '';
+            } catch (e) { showToast('이미지 처리 실패'); }
+        });
+
+        photoRemoveBtn.addEventListener('click', () => {
+            dogPhotoBase64 = ''; photoInput.value = '';
+            photoPreview.src = ''; photoPreview.classList.remove('show');
+            photoPlaceholder.classList.remove('hidden');
+            photoRemoveBtn.style.display = 'none';
+        });
+
         document.getElementById('dogForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('dogNameInput').value.trim();
@@ -591,8 +666,12 @@
             let sc = document.getElementById('sizeClassInput').value;
             if (!sc && height !== null) sc = heightToSize(height);
             try {
-                await db.collection('dogs').add({ name, breed, height, sizeClass: sc, createdAt: new Date().toISOString() });
+                await db.collection('dogs').add({ name, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', createdAt: new Date().toISOString() });
                 showToast(`"${name}" 등록 완료!`); this.reset();
+                dogPhotoBase64 = ''; photoInput.value = '';
+                photoPreview.src = ''; photoPreview.classList.remove('show');
+                photoPlaceholder.classList.remove('hidden');
+                photoRemoveBtn.style.display = 'none';
             } catch (e) { showToast('등록 실패: ' + e.message); }
         });
 
@@ -609,7 +688,8 @@
             area.innerHTML = filtered.map(dog => {
                 const cnt = cachedRecords.filter(r => r.dogId === dog.id).length;
                 const meta = [dog.breed, dog.height ? `체고 ${dog.height}cm` : '', dog.sizeClass ? `체급 ${dog.sizeClass}` : '', `기록 ${cnt}건`].filter(Boolean).join(' · ');
-                return `<div class="dog-list-item" data-id="${dog.id}"><div class="dog-list-info"><span class="dog-list-name">&#x1F436; ${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
+                const thumb = dog.photo ? `<img class="dog-list-thumb" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-list-thumb-placeholder">&#x1F436;</div>`;
+                return `<div class="dog-list-item" data-id="${dog.id}">${thumb}<div class="dog-list-info"><span class="dog-list-name">${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
             }).join('');
             area.querySelectorAll('.dog-list-item').forEach(el => {
                 el.addEventListener('click', (e) => { if (e.target.closest('.dog-delete-btn')) return; showDogDetailView(el.dataset.id); });
@@ -630,7 +710,8 @@
             const br = records.reduce((b, r) => (r.rank && (!b || r.rank < b)) ? r.rank : b, null);
             const pr = records.filter(r => r.promoted === '승급').length;
             const pm = [dog.breed, dog.sizeClass ? `체급 ${dog.sizeClass}` : '', dog.height ? `체고 ${dog.height}cm` : ''].filter(Boolean).join(' · ');
-            document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile"><div class="dog-profile-icon">&#x1F436;</div><div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div></div>`;
+            const profilePic = dog.photo ? `<img class="dog-profile-img" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-profile-icon">&#x1F436;</div>`;
+            document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile">${profilePic}<div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div></div>`;
             const ra = document.getElementById('dogRecordsArea');
             if (!records.length) { ra.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">아직 등록된 기록이 없습니다</div></div>'; }
             else { ra.innerHTML = records.map(r => renderRecordItem(r, false)).join(''); attachRecordActions(ra); }
