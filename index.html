@@ -141,6 +141,9 @@
         .sort-btn:hover { background: var(--gray-50); }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
         .summary-card { background: white; border-radius: var(--radius); padding: 1rem; text-align: center; box-shadow: var(--shadow); }
+        .summary-card.clickable { cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+        .summary-card.clickable:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .summary-card.clickable .summary-card-value { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
         .summary-card-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
         .summary-card-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.15rem; }
         .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
@@ -998,7 +1001,21 @@
             let f = cachedRecords.filter(r => { if (cf && r.compId !== cf) return false; if (lf && r.level !== lf) return false; if (sf && r.sizeClass !== sf) return false; if (ef && r.eventType !== ef) return false; return true; });
             f.sort((a, b) => { const c = (a.compDate || '').localeCompare(b.compDate || ''); return sortAsc ? c : -c; });
             const sa = document.getElementById('summaryArea'); const cl = f.filter(r => r.result === '클린런').length; const el = f.filter(r => r.result === '실격').length;
-            sa.innerHTML = `<div class="summary-grid"><div class="summary-card"><div class="summary-card-value">${f.length}</div><div class="summary-card-label">총 기록 수</div></div><div class="summary-card"><div class="summary-card-value">${cachedDogs.length}</div><div class="summary-card-label">등록 강아지</div></div><div class="summary-card"><div class="summary-card-value">${cachedComps.length}</div><div class="summary-card-label">등록 대회</div></div><div class="summary-card"><div class="summary-card-value">${cl}</div><div class="summary-card-label">클린런</div></div><div class="summary-card"><div class="summary-card-value">${el}</div><div class="summary-card-label">실격</div></div></div>`;
+            sa.innerHTML = `<div class="summary-grid"><div class="summary-card"><div class="summary-card-value">${f.length}</div><div class="summary-card-label">총 기록 수</div></div><div class="summary-card clickable" id="summaryDogCard"><div class="summary-card-value">${cachedDogs.length}</div><div class="summary-card-label">등록 강아지</div></div><div class="summary-card clickable" id="summaryCompCard"><div class="summary-card-value">${cachedComps.length}</div><div class="summary-card-label">등록 대회</div></div><div class="summary-card"><div class="summary-card-value">${cl}</div><div class="summary-card-label">클린런</div></div><div class="summary-card"><div class="summary-card-value">${el}</div><div class="summary-card-label">실격</div></div></div>`;
+            document.getElementById('summaryDogCard').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('.tab-btn[data-tab="dogs"]').classList.add('active');
+                document.getElementById('tab-dogs').classList.add('active');
+                showDogListView(); renderDogList();
+            });
+            document.getElementById('summaryCompCard').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('.tab-btn[data-tab="competitions"]').classList.add('active');
+                document.getElementById('tab-competitions').classList.add('active');
+                renderCompList();
+            });
             const ct = document.getElementById('allRecords');
             if (!f.length) { ct.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">등록된 기록이 없습니다</div></div>'; return; }
             ct.innerHTML = f.map(r => renderRecordItem(r, true)).join(''); attachRecordActions(ct);
