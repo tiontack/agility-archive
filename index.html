@@ -287,7 +287,7 @@
                     <div class="form-group"><label>승급 여부</label><select id="promoted"><option value="해당없음">해당없음</option><option value="승급">승급 성공</option><option value="미승급">미승급</option></select></div>
                     <div class="form-group full-width"><label>메모</label><textarea id="memo" placeholder="특이사항, 컨디션, 개선점 등"></textarea></div>
                 </div></div>
-                <div class="btn-group"><button type="submit" class="btn btn-primary">등록하기</button><button type="reset" class="btn btn-outline">초기화</button></div>
+                <div class="btn-group"><button type="submit" class="btn btn-primary" id="recordSubmitBtn">등록하기</button><button type="reset" class="btn btn-outline">초기화</button><button type="button" class="btn btn-outline" id="recordCancelEditBtn" style="display:none;">수정 취소</button></div>
             </form>
         </div>
 
@@ -313,7 +313,7 @@
         <!-- 강아지 탭 -->
         <div id="tab-dogs" class="tab-content">
             <form id="dogForm" class="card">
-                <div class="card-title">강아지 등록</div>
+                <div class="card-title" id="dogFormTitle">강아지 등록</div>
                 <div class="form-group full-width" style="align-items:center;margin-bottom:1rem;">
                     <label style="text-align:center;">프로필 사진</label>
                     <div class="photo-upload-area">
@@ -333,7 +333,7 @@
                     <div class="form-group"><label>체고 (cm)</label><input type="number" id="heightInput" step="0.1" min="0" placeholder="예: 38.5"></div>
                     <div class="form-group"><label>체급 (자동/수동)</label><select id="sizeClassInput"><option value="">체고 입력 시 자동</option><option value="T">T</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select></div>
                 </div>
-                <div class="btn-group"><button type="submit" class="btn btn-success">강아지 등록</button></div>
+                <div class="btn-group"><button type="submit" class="btn btn-success" id="dogSubmitBtn">강아지 등록</button><button type="button" class="btn btn-outline" id="dogCancelEditBtn" style="display:none;">취소</button></div>
             </form>
             <div class="card" style="margin-top:0;">
                 <div class="search-box"><input type="text" id="dogSearchInput" placeholder="강아지 이름으로 검색..."></div>
@@ -508,6 +508,31 @@
         });
 
         // ===== 대회 탭 =====
+        let editingCompId = null;
+        function startEditComp(compId) {
+            const comp = cachedComps.find(c => c.id === compId);
+            if (!comp) return;
+            editingCompId = compId;
+            document.getElementById('compNameInput').value = comp.name || '';
+            document.getElementById('compDateInput').value = comp.date || '';
+            document.getElementById('compOrganizerInput').value = comp.organizer || '';
+            document.getElementById('compVenueInput').value = comp.venue || '';
+            document.getElementById('compMemoInput').value = comp.memo || '';
+            document.querySelector('#compForm .card-title').innerHTML = '&#x1F3C5; 대회 수정';
+            document.querySelector('#compForm .btn-warning').textContent = '수정 완료';
+            if (!document.getElementById('compCancelEditBtn')) {
+                const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-outline'; btn.id = 'compCancelEditBtn'; btn.textContent = '취소';
+                btn.addEventListener('click', resetCompForm);
+                document.querySelector('#compForm .btn-group').appendChild(btn);
+            } else { document.getElementById('compCancelEditBtn').style.display = ''; }
+        }
+        function resetCompForm() {
+            editingCompId = null;
+            document.getElementById('compForm').reset();
+            document.querySelector('#compForm .card-title').innerHTML = '&#x1F3C5; 대회 등록';
+            document.querySelector('#compForm .btn-warning').textContent = '대회 등록';
+            const cb = document.getElementById('compCancelEditBtn'); if (cb) cb.style.display = 'none';
+        }
         document.getElementById('compForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('compNameInput').value.trim();
@@ -516,9 +541,15 @@
             const venue = document.getElementById('compVenueInput').value.trim();
             const memo = document.getElementById('compMemoInput').value.trim();
             try {
-                await db.collection('competitions').add({ name, date, organizer, venue, memo, createdAt: new Date().toISOString() });
-                showToast(`"${name}" 대회 등록 완료!`); this.reset();
-            } catch (e) { showToast('등록 실패: ' + e.message); }
+                if (editingCompId) {
+                    await db.collection('competitions').doc(editingCompId).update({ name, date, organizer, venue, memo, updatedAt: new Date().toISOString() });
+                    showToast(`"${name}" 대회 수정 완료!`);
+                    resetCompForm();
+                } else {
+                    await db.collection('competitions').add({ name, date, organizer, venue, memo, createdAt: new Date().toISOString() });
+                    showToast(`"${name}" 대회 등록 완료!`); this.reset();
+                }
+            } catch (e) { showToast((editingCompId ? '수정' : '등록') + ' 실패: ' + e.message); }
         });
 
         document.getElementById('compSearchInput').addEventListener('input', renderCompList);
@@ -535,8 +566,12 @@
             area.innerHTML = filtered.map(c => {
                 const recCnt = cachedRecords.filter(r => r.compId === c.id).length;
                 const meta = [c.date, c.organizer, c.venue, `기록 ${recCnt}건`].filter(Boolean).join(' · ');
-                return `<div class="comp-list-item" data-id="${c.id}"><div class="comp-list-info"><span class="comp-list-name">&#x1F3C5; ${escapeHtml(c.name)}</span><span class="comp-list-meta">${meta}</span></div><div class="comp-list-actions"><button class="btn btn-danger btn-sm comp-delete-btn" data-id="${c.id}">삭제</button></div></div>`;
+                return `<div class="comp-list-item" data-id="${c.id}"><div class="comp-list-info"><span class="comp-list-name">&#x1F3C5; ${escapeHtml(c.name)}</span><span class="comp-list-meta">${meta}</span></div><div class="comp-list-actions"><button class="btn btn-outline btn-sm comp-edit-btn" data-id="${c.id}">수정</button><button class="btn btn-danger btn-sm comp-delete-btn" data-id="${c.id}">삭제</button></div></div>`;
             }).join('');
+            area.querySelectorAll('.comp-edit-btn').forEach(b => b.addEventListener('click', (e) => {
+                e.stopPropagation(); startEditComp(b.dataset.id);
+                document.getElementById('compForm').scrollIntoView({ behavior: 'smooth' });
+            }));
             area.querySelectorAll('.comp-delete-btn').forEach(b => b.addEventListener('click', (e) => {
                 e.stopPropagation(); pendingDeleteType = 'comp'; deleteTargetId = b.dataset.id;
                 document.getElementById('deleteModalTitle').textContent = '대회 삭제';
@@ -588,10 +623,15 @@
 
         // ===== 강아지 탭 =====
         let selectedDogId = null;
+        let editingDogId = null;
 
         function showDogListView() {
             selectedDogId = null;
+            editingDogId = null;
             document.getElementById('dogForm').style.display = '';
+            document.getElementById('dogFormTitle').textContent = '강아지 등록';
+            document.getElementById('dogSubmitBtn').textContent = '강아지 등록';
+            document.getElementById('dogCancelEditBtn').style.display = 'none';
             document.querySelector('#tab-dogs > .card').style.display = '';
             document.getElementById('dogListArea').style.display = '';
             document.getElementById('dogDetailArea').style.display = 'none';
@@ -599,11 +639,42 @@
 
         function showDogDetailView(dogId) {
             selectedDogId = dogId;
+            editingDogId = null;
             document.getElementById('dogForm').style.display = 'none';
             document.querySelector('#tab-dogs > .card').style.display = 'none';
             document.getElementById('dogListArea').style.display = 'none';
             document.getElementById('dogDetailArea').style.display = '';
             renderDogProfile(dogId);
+        }
+
+        function startEditDog(dogId) {
+            const dog = cachedDogs.find(d => d.id === dogId);
+            if (!dog) return;
+            editingDogId = dogId;
+            document.getElementById('dogDetailArea').style.display = 'none';
+            document.getElementById('dogForm').style.display = '';
+            document.querySelector('#tab-dogs > .card').style.display = 'none';
+            document.getElementById('dogListArea').style.display = 'none';
+            document.getElementById('dogFormTitle').textContent = '강아지 수정';
+            document.getElementById('dogSubmitBtn').textContent = '수정 완료';
+            document.getElementById('dogCancelEditBtn').style.display = '';
+            document.getElementById('dogNameInput').value = dog.name || '';
+            document.getElementById('handlerInput').value = dog.handler || '';
+            document.getElementById('breedInput').value = dog.breed || '';
+            document.getElementById('heightInput').value = dog.height || '';
+            document.getElementById('sizeClassInput').value = dog.sizeClass || '';
+            if (dog.photo) {
+                dogPhotoBase64 = dog.photo;
+                photoPreview.src = dog.photo;
+                photoPreview.classList.add('show');
+                photoPlaceholder.classList.add('hidden');
+                photoRemoveBtn.style.display = '';
+            } else {
+                dogPhotoBase64 = '';
+                photoPreview.src = ''; photoPreview.classList.remove('show');
+                photoPlaceholder.classList.remove('hidden');
+                photoRemoveBtn.style.display = 'none';
+            }
         }
 
         document.getElementById('dogDetailBack').addEventListener('click', () => { showDogListView(); renderDogList(); });
@@ -659,6 +730,17 @@
             photoRemoveBtn.style.display = 'none';
         });
 
+        document.getElementById('dogCancelEditBtn').addEventListener('click', () => {
+            editingDogId = null;
+            document.getElementById('dogForm').reset();
+            dogPhotoBase64 = ''; photoInput.value = '';
+            photoPreview.src = ''; photoPreview.classList.remove('show');
+            photoPlaceholder.classList.remove('hidden');
+            photoRemoveBtn.style.display = 'none';
+            if (selectedDogId) showDogDetailView(selectedDogId);
+            else showDogListView();
+        });
+
         document.getElementById('dogForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('dogNameInput').value.trim();
@@ -668,13 +750,26 @@
             let sc = document.getElementById('sizeClassInput').value;
             if (!sc && height !== null) sc = heightToSize(height);
             try {
-                await db.collection('dogs').add({ name, handler, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', createdAt: new Date().toISOString() });
-                showToast(`"${name}" 등록 완료!`); this.reset();
-                dogPhotoBase64 = ''; photoInput.value = '';
-                photoPreview.src = ''; photoPreview.classList.remove('show');
-                photoPlaceholder.classList.remove('hidden');
-                photoRemoveBtn.style.display = 'none';
-            } catch (e) { showToast('등록 실패: ' + e.message); }
+                if (editingDogId) {
+                    await db.collection('dogs').doc(editingDogId).update({ name, handler, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', updatedAt: new Date().toISOString() });
+                    showToast(`"${name}" 수정 완료!`);
+                    const returnId = editingDogId;
+                    editingDogId = null;
+                    this.reset();
+                    dogPhotoBase64 = ''; photoInput.value = '';
+                    photoPreview.src = ''; photoPreview.classList.remove('show');
+                    photoPlaceholder.classList.remove('hidden');
+                    photoRemoveBtn.style.display = 'none';
+                    showDogDetailView(returnId);
+                } else {
+                    await db.collection('dogs').add({ name, handler, breed, height, sizeClass: sc, photo: dogPhotoBase64 || '', createdAt: new Date().toISOString() });
+                    showToast(`"${name}" 등록 완료!`); this.reset();
+                    dogPhotoBase64 = ''; photoInput.value = '';
+                    photoPreview.src = ''; photoPreview.classList.remove('show');
+                    photoPlaceholder.classList.remove('hidden');
+                    photoRemoveBtn.style.display = 'none';
+                }
+            } catch (e) { showToast((editingDogId ? '수정' : '등록') + ' 실패: ' + e.message); }
         });
 
         document.getElementById('dogSearchInput').addEventListener('input', renderDogList);
@@ -691,11 +786,14 @@
                 const cnt = cachedRecords.filter(r => r.dogId === dog.id).length;
                 const meta = [dog.handler ? `핸들러: ${dog.handler}` : '', dog.breed, dog.height ? `체고 ${dog.height}cm` : '', dog.sizeClass ? `체급 ${dog.sizeClass}` : '', `기록 ${cnt}건`].filter(Boolean).join(' · ');
                 const thumb = dog.photo ? `<img class="dog-list-thumb" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-list-thumb-placeholder">&#x1F436;</div>`;
-                return `<div class="dog-list-item" data-id="${dog.id}">${thumb}<div class="dog-list-info"><span class="dog-list-name">${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
+                return `<div class="dog-list-item" data-id="${dog.id}">${thumb}<div class="dog-list-info"><span class="dog-list-name">${escapeHtml(dog.name)}</span><span class="dog-list-meta">${meta}</span></div><div class="dog-list-actions"><button class="btn btn-outline btn-sm dog-edit-btn" data-id="${dog.id}">수정</button><button class="btn btn-danger btn-sm dog-delete-btn" data-id="${dog.id}">삭제</button></div></div>`;
             }).join('');
             area.querySelectorAll('.dog-list-item').forEach(el => {
-                el.addEventListener('click', (e) => { if (e.target.closest('.dog-delete-btn')) return; showDogDetailView(el.dataset.id); });
+                el.addEventListener('click', (e) => { if (e.target.closest('.dog-delete-btn') || e.target.closest('.dog-edit-btn')) return; showDogDetailView(el.dataset.id); });
             });
+            area.querySelectorAll('.dog-edit-btn').forEach(b => b.addEventListener('click', (e) => {
+                e.stopPropagation(); startEditDog(b.dataset.id);
+            }));
             area.querySelectorAll('.dog-delete-btn').forEach(b => b.addEventListener('click', (e) => {
                 e.stopPropagation(); pendingDeleteType = 'dog'; deleteTargetId = b.dataset.id;
                 document.getElementById('deleteModalTitle').textContent = '강아지 삭제';
@@ -713,7 +811,8 @@
             const pr = records.filter(r => r.promoted === '승급').length;
             const pm = [dog.handler ? `핸들러: ${dog.handler}` : '', dog.breed, dog.sizeClass ? `체급 ${dog.sizeClass}` : '', dog.height ? `체고 ${dog.height}cm` : ''].filter(Boolean).join(' · ');
             const profilePic = dog.photo ? `<img class="dog-profile-img" src="${dog.photo}" alt="${escapeHtml(dog.name)}">` : `<div class="dog-profile-icon">&#x1F436;</div>`;
-            document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile">${profilePic}<div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div></div>`;
+            document.getElementById('dogProfileArea').innerHTML = `<div class="dog-profile">${profilePic}<div class="dog-profile-name">${escapeHtml(dog.name)}</div>${pm ? `<div style="font-size:0.85rem;color:var(--gray-500);margin-top:0.15rem;">${escapeHtml(pm)}</div>` : ''}<div class="dog-profile-stats"><div class="profile-stat"><div class="profile-stat-value">${records.length}</div><div class="profile-stat-label">총 출전</div></div><div class="profile-stat"><div class="profile-stat-value">${cr}</div><div class="profile-stat-label">클린런</div></div><div class="profile-stat"><div class="profile-stat-value">${br ? br + '등' : '-'}</div><div class="profile-stat-label">최고 순위</div></div><div class="profile-stat"><div class="profile-stat-value">${pr}</div><div class="profile-stat-label">승급</div></div></div><div style="margin-top:1rem;"><button class="btn btn-outline btn-sm" id="editDogBtn">수정</button></div></div>`;
+            document.getElementById('editDogBtn').addEventListener('click', () => startEditDog(dogId));
             const ra = document.getElementById('dogRecordsArea');
             if (!records.length) { ra.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">아직 등록된 기록이 없습니다</div></div>'; }
             else { ra.innerHTML = records.map(r => renderRecordItem(r, false)).join(''); attachRecordActions(ra); }
@@ -749,6 +848,73 @@
         rI.addEventListener('input', () => { userOverrode = false; autoJudge(); });
         resS.addEventListener('change', () => { userOverrode = true; autoN.classList.remove('show'); elimS.disabled = resS.value !== '실격'; if (resS.value !== '실격') elimS.value = ''; });
 
+        let editingRecordId = null;
+
+        function resetRecordForm() {
+            editingRecordId = null;
+            document.querySelector('#recordForm .card-title').textContent = '대회 참가 결과 등록';
+            document.getElementById('recordSubmitBtn').textContent = '등록하기';
+            document.getElementById('recordCancelEditBtn').style.display = 'none';
+            document.getElementById('selectedDogInfo').classList.remove('show');
+            document.getElementById('selectedCompInfo').classList.remove('show');
+            ['manualCompDateGroup','manualCompNameGroup','manualOrganizerGroup','manualVenueGroup'].forEach(id => document.getElementById(id).style.display = 'none');
+            elimS.disabled = true; autoN.classList.remove('show'); userOverrode = false;
+            document.getElementById('sizeClass').value = '';
+        }
+
+        document.getElementById('recordCancelEditBtn').addEventListener('click', () => {
+            document.getElementById('recordForm').reset();
+            resetRecordForm();
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.tab-btn[data-tab="all"]').classList.add('active');
+            document.getElementById('tab-all').classList.add('active');
+            renderAllRecords();
+        });
+
+        function startEditRecord(recId) {
+            const rec = cachedRecords.find(r => r.id === recId);
+            if (!rec) return;
+            editingRecordId = recId;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.tab-btn[data-tab="register"]').classList.add('active');
+            document.getElementById('tab-register').classList.add('active');
+            refreshDogSelect(); refreshCompSelect();
+            document.querySelector('#recordForm .card-title').textContent = '기록 수정';
+            document.getElementById('recordSubmitBtn').textContent = '수정 완료';
+            document.getElementById('recordCancelEditBtn').style.display = '';
+            document.getElementById('dogSelect').value = rec.dogId || '';
+            document.getElementById('dogSelect').dispatchEvent(new Event('change'));
+            if (rec.compId) { document.getElementById('compSelect').value = rec.compId; }
+            else { document.getElementById('compSelect').value = '__manual__'; }
+            document.getElementById('compSelect').dispatchEvent(new Event('change'));
+            if (!rec.compId) {
+                document.getElementById('compDate').value = rec.compDate || '';
+                document.getElementById('compName').value = rec.compName || '';
+                document.getElementById('organizer').value = rec.organizer || '';
+                document.getElementById('venue').value = rec.venue || '';
+            }
+            document.getElementById('eventType').value = rec.eventType || '';
+            document.getElementById('level').value = rec.level || '';
+            document.getElementById('sizeClass').value = rec.sizeClass || '';
+            document.getElementById('matchType').value = rec.matchType || '';
+            document.getElementById('rank').value = rec.rank || '';
+            document.getElementById('totalEntries').value = rec.totalEntries || '';
+            document.getElementById('runTime').value = rec.runTime || '';
+            document.getElementById('standardTime').value = rec.standardTime || '';
+            fI.value = rec.faults || 0;
+            rI.value = rec.refusals || 0;
+            pI.value = rec.penalties || 0;
+            userOverrode = true;
+            resS.value = rec.result || '완주';
+            elimS.disabled = rec.result !== '실격';
+            elimS.value = rec.eliminationReason || '';
+            autoN.classList.remove('show');
+            document.getElementById('promoted').value = rec.promoted || '해당없음';
+            document.getElementById('memo').value = rec.memo || '';
+        }
+
         document.getElementById('recordForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const dogId = document.getElementById('dogSelect').value; if (!dogId) { showToast('강아지를 선택해주세요'); return; }
@@ -777,24 +943,23 @@
                 standardTime: document.getElementById('standardTime').value ? parseFloat(document.getElementById('standardTime').value) : null,
                 faults: parseInt(fI.value) || 0, refusals: parseInt(rI.value) || 0, penalties: pI.value ? parseFloat(pI.value) : 0,
                 result: resS.value, eliminationReason: elimS.value, promoted: document.getElementById('promoted').value,
-                memo: document.getElementById('memo').value.trim(), createdAt: new Date().toISOString() };
+                memo: document.getElementById('memo').value.trim() };
             try {
-                await db.collection('records').add(rec);
-                showToast('기록이 등록되었습니다!'); this.reset(); elimS.disabled = true; fI.value = '0'; rI.value = '0'; userOverrode = false; autoN.classList.remove('show');
-                document.getElementById('selectedDogInfo').classList.remove('show'); document.getElementById('sizeClass').value = '';
-                document.getElementById('selectedCompInfo').classList.remove('show');
-                ['manualCompDateGroup','manualCompNameGroup','manualOrganizerGroup','manualVenueGroup'].forEach(id => document.getElementById(id).style.display = 'none');
-            } catch (e) { showToast('등록 실패: ' + e.message); }
+                if (editingRecordId) {
+                    rec.updatedAt = new Date().toISOString();
+                    await db.collection('records').doc(editingRecordId).update(rec);
+                    showToast('기록이 수정되었습니다!');
+                } else {
+                    rec.createdAt = new Date().toISOString();
+                    await db.collection('records').add(rec);
+                    showToast('기록이 등록되었습니다!');
+                }
+                this.reset(); resetRecordForm(); fI.value = '0'; rI.value = '0';
+            } catch (e) { showToast((editingRecordId ? '수정' : '등록') + ' 실패: ' + e.message); }
         });
 
         document.getElementById('recordForm').addEventListener('reset', function() {
-            setTimeout(() => {
-                document.getElementById('selectedDogInfo').classList.remove('show');
-                document.getElementById('selectedCompInfo').classList.remove('show');
-                ['manualCompDateGroup','manualCompNameGroup','manualOrganizerGroup','manualVenueGroup'].forEach(id => document.getElementById(id).style.display = 'none');
-                elimS.disabled = true; autoN.classList.remove('show'); userOverrode = false;
-                document.getElementById('sizeClass').value = '';
-            }, 0);
+            setTimeout(() => { resetRecordForm(); }, 0);
         });
 
         // ===== 기록 카드 =====
@@ -802,7 +967,7 @@
             const rk = rec.rank ? `${rec.rank}등` + (rec.totalEntries ? ` / ${rec.totalEntries}두` : '') : '-';
             const tm = rec.runTime ? `${rec.runTime}초` + (rec.standardTime ? ` (기준 ${rec.standardTime}초)` : '') : '-';
             const rt = rec.result === '실격' ? `<span class="tag tag-eliminated">${rec.result}${rec.eliminationReason ? ' - ' + rec.eliminationReason : ''}</span>` : rec.result === '클린런' ? '<span class="tag tag-rank">&#x2705; 클린런</span>' : '';
-            return `<div class="record-item" data-id="${rec.id}"><div class="record-header"><div>${showName ? `<span class="record-dog-name">${escapeHtml(rec.dogName)}</span>` : ''}${rec.breed ? `<span style="font-size:0.8rem;color:var(--gray-500);margin-left:0.3rem;">${escapeHtml(rec.breed)}</span>` : ''}<span class="record-date">${rec.compDate || ''}</span></div></div><div class="record-competition">${escapeHtml(rec.compName)}${rec.organizer ? ' &middot; ' + escapeHtml(rec.organizer) : ''}${rec.venue ? ' &middot; ' + escapeHtml(rec.venue) : ''}</div><div class="record-tags"><span class="tag tag-event">${rec.eventType}</span><span class="tag tag-level">${rec.level}</span><span class="tag tag-size">${rec.sizeClass}</span>${rec.matchType ? `<span class="tag tag-level">${rec.matchType}</span>` : ''}${rt}${rec.promoted === '승급' ? '<span class="tag tag-rank">&#x2B06; 승급</span>' : ''}</div><div class="record-stats"><div class="stat"><div class="stat-label">등수</div><div class="stat-value">${rk}</div></div><div class="stat"><div class="stat-label">주행 시간</div><div class="stat-value">${tm}</div></div><div class="stat"><div class="stat-label">실책</div><div class="stat-value">${rec.faults}</div></div><div class="stat"><div class="stat-label">거부</div><div class="stat-value">${rec.refusals}</div></div><div class="stat"><div class="stat-label">감점</div><div class="stat-value">${rec.penalties}</div></div></div>${rec.memo ? `<div class="record-memo">${escapeHtml(rec.memo)}</div>` : ''}<div class="record-actions"><button class="btn btn-danger btn-sm delete-btn" data-id="${rec.id}">삭제</button></div></div>`;
+            return `<div class="record-item" data-id="${rec.id}"><div class="record-header"><div>${showName ? `<span class="record-dog-name">${escapeHtml(rec.dogName)}</span>` : ''}${rec.breed ? `<span style="font-size:0.8rem;color:var(--gray-500);margin-left:0.3rem;">${escapeHtml(rec.breed)}</span>` : ''}<span class="record-date">${rec.compDate || ''}</span></div></div><div class="record-competition">${escapeHtml(rec.compName)}${rec.organizer ? ' &middot; ' + escapeHtml(rec.organizer) : ''}${rec.venue ? ' &middot; ' + escapeHtml(rec.venue) : ''}</div><div class="record-tags"><span class="tag tag-event">${rec.eventType}</span><span class="tag tag-level">${rec.level}</span><span class="tag tag-size">${rec.sizeClass}</span>${rec.matchType ? `<span class="tag tag-level">${rec.matchType}</span>` : ''}${rt}${rec.promoted === '승급' ? '<span class="tag tag-rank">&#x2B06; 승급</span>' : ''}</div><div class="record-stats"><div class="stat"><div class="stat-label">등수</div><div class="stat-value">${rk}</div></div><div class="stat"><div class="stat-label">주행 시간</div><div class="stat-value">${tm}</div></div><div class="stat"><div class="stat-label">실책</div><div class="stat-value">${rec.faults}</div></div><div class="stat"><div class="stat-label">거부</div><div class="stat-value">${rec.refusals}</div></div><div class="stat"><div class="stat-label">감점</div><div class="stat-value">${rec.penalties}</div></div></div>${rec.memo ? `<div class="record-memo">${escapeHtml(rec.memo)}</div>` : ''}<div class="record-actions"><button class="btn btn-outline btn-sm edit-record-btn" data-id="${rec.id}">수정</button><button class="btn btn-danger btn-sm delete-btn" data-id="${rec.id}">삭제</button></div></div>`;
         }
 
         // ===== 최근 게시글 (전체기록 탭 상단) =====
@@ -848,6 +1013,7 @@
         let deleteTargetId = null, pendingDeleteType = 'record';
         function attachRecordActions(ct) {
             ct.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', () => { pendingDeleteType = 'record'; deleteTargetId = b.dataset.id; document.getElementById('deleteModalTitle').textContent = '기록 삭제'; document.getElementById('deleteModalMsg').innerHTML = '이 기록을 삭제하시겠습니까?'; document.getElementById('deleteModal').classList.add('show'); }));
+            ct.querySelectorAll('.edit-record-btn').forEach(b => b.addEventListener('click', () => startEditRecord(b.dataset.id)));
         }
         document.getElementById('confirmDelete').addEventListener('click', async () => {
             if (!deleteTargetId) return;
@@ -875,8 +1041,9 @@
             const post = cachedPosts.find(p => p.id === id); if (!post) return;
             document.getElementById('boardView').style.display = 'none'; document.getElementById('boardWrite').style.display = 'none';
             const area = document.getElementById('boardDetail'); area.style.display = '';
-            area.innerHTML = `<div class="post-detail"><div class="post-title-row">${post.category ? `<span class="tag tag-${post.category === '공지' ? 'notice' : 'event'}">${escapeHtml(post.category)}</span>` : ''}<span class="post-title">${escapeHtml(post.title)}</span></div><div class="post-meta">${escapeHtml(post.author || '익명')} &middot; ${fmtDate(post.createdAt)}</div><div class="post-body">${escapeHtml(post.content)}</div><div class="btn-group"><button class="btn btn-outline btn-sm" id="backToBoardBtn">목록으로</button><button class="btn btn-danger btn-sm" id="deletePostBtn">삭제</button></div></div>`;
+            area.innerHTML = `<div class="post-detail"><div class="post-title-row">${post.category ? `<span class="tag tag-${post.category === '공지' ? 'notice' : 'event'}">${escapeHtml(post.category)}</span>` : ''}<span class="post-title">${escapeHtml(post.title)}</span></div><div class="post-meta">${escapeHtml(post.author || '익명')} &middot; ${fmtDate(post.createdAt)}</div><div class="post-body">${escapeHtml(post.content)}</div><div class="btn-group"><button class="btn btn-outline btn-sm" id="backToBoardBtn">목록으로</button><button class="btn btn-outline btn-sm" id="editPostBtn">수정</button><button class="btn btn-danger btn-sm" id="deletePostBtn">삭제</button></div></div>`;
             document.getElementById('backToBoardBtn').addEventListener('click', showBoardList);
+            document.getElementById('editPostBtn').addEventListener('click', () => showPostWrite(post));
             document.getElementById('deletePostBtn').addEventListener('click', () => { pendingDeleteType = 'post'; deleteTargetId = id; document.getElementById('deleteModalTitle').textContent = '게시글 삭제'; document.getElementById('deleteModalMsg').innerHTML = '이 게시글을 삭제하시겠습니까?'; document.getElementById('deleteModal').classList.add('show'); });
         }
 
