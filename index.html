@@ -338,7 +338,7 @@
                 </div>
                 <div class="btn-group"><button type="submit" class="btn btn-success" id="dogSubmitBtn">강아지 등록</button><button type="button" class="btn btn-outline" id="dogCancelEditBtn" style="display:none;">취소</button></div>
             </form>
-            <div class="card" style="margin-top:0;">
+            <div class="card" style="margin-top:0;" id="dogSearchCard">
                 <div class="search-box"><input type="text" id="dogSearchInput" placeholder="강아지 이름으로 검색..."></div>
             </div>
             <div id="dogListArea" class="dog-list"></div>
@@ -635,7 +635,7 @@
             document.getElementById('dogFormTitle').textContent = '강아지 등록';
             document.getElementById('dogSubmitBtn').textContent = '강아지 등록';
             document.getElementById('dogCancelEditBtn').style.display = 'none';
-            document.querySelector('#tab-dogs > .card').style.display = '';
+            document.getElementById('dogSearchCard').style.display = '';
             document.getElementById('dogListArea').style.display = '';
             document.getElementById('dogDetailArea').style.display = 'none';
         }
@@ -644,7 +644,7 @@
             selectedDogId = dogId;
             editingDogId = null;
             document.getElementById('dogForm').style.display = 'none';
-            document.querySelector('#tab-dogs > .card').style.display = 'none';
+            document.getElementById('dogSearchCard').style.display = 'none';
             document.getElementById('dogListArea').style.display = 'none';
             document.getElementById('dogDetailArea').style.display = '';
             renderDogProfile(dogId);
@@ -656,7 +656,7 @@
             editingDogId = dogId;
             document.getElementById('dogDetailArea').style.display = 'none';
             document.getElementById('dogForm').style.display = '';
-            document.querySelector('#tab-dogs > .card').style.display = 'none';
+            document.getElementById('dogSearchCard').style.display = 'none';
             document.getElementById('dogListArea').style.display = 'none';
             document.getElementById('dogFormTitle').textContent = '강아지 수정';
             document.getElementById('dogSubmitBtn').textContent = '수정 완료';
