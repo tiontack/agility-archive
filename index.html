@@ -162,6 +162,17 @@
         .dog-detail-area { margin-top: 1.5rem; }
         .dog-detail-back { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--primary); cursor: pointer; margin-bottom: 0.75rem; font-weight: 600; }
         .dog-detail-back:hover { text-decoration: underline; }
+        .recent-posts-section { margin-bottom: 1.25rem; }
+        .recent-posts-title { font-size: 0.95rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+        .recent-posts-list { display: flex; flex-direction: column; gap: 0.4rem; }
+        .recent-post-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.85rem; background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); cursor: pointer; transition: box-shadow 0.2s; }
+        .recent-post-item:hover { box-shadow: var(--shadow-md); }
+        .recent-post-item.pinned { border-left: 3px solid var(--warning); background: #fffbeb; }
+        .recent-post-category { flex-shrink: 0; }
+        .recent-post-content { flex: 1; min-width: 0; }
+        .recent-post-title-text { font-weight: 600; font-size: 0.88rem; color: var(--gray-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .recent-post-meta { font-size: 0.73rem; color: var(--gray-400); }
+        .recent-post-arrow { flex-shrink: 0; color: var(--gray-300); font-size: 0.85rem; }
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 1rem; }
         .loading-spinner { width: 40px; height: 40px; border: 4px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -204,6 +215,7 @@
         </div>
 
         <div id="tab-all" class="tab-content active">
+            <div id="recentPostsArea" class="recent-posts-section"></div>
             <div id="summaryArea"></div>
             <div class="filter-bar">
                 <select id="filterLevel"><option value="">전체 난이도</option><option value="비기너">비기너</option><option value="노비스">노비스</option><option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option><option value="Grade 3">Grade 3</option></select>
@@ -219,13 +231,6 @@
         </div>
 
         <div id="tab-register" class="tab-content">
-            <div class="info-box">
-                <strong>KKF/FCI 어질리티 규정 안내</strong>
-                체급: S(&lt;35cm) / M(35~43cm) / I(43~48cm) / L(&ge;48cm) / XS, T(내셔널 전용)<br>
-                난이도: 비기너 &rarr; 노비스 &rarr; Grade 1 &rarr; Grade 2 &rarr; Grade 3<br>
-                감점: 실책(폴트) 5점, 거부(리퓨절) 5점 (거부 3회 시 실격)<br>
-                종목: 어질리티(접촉장애물 포함) / 점핑(접촉장애물 미포함)
-            </div>
             <form id="recordForm" class="card">
                 <div class="card-title">대회 참가 결과 등록</div>
                 <div class="form-section"><div class="form-section-title">참가견 선택</div><div class="form-grid"><div class="form-group full-width"><label>강아지 <span class="required">*</span></label><select id="dogSelect" required><option value="">-- 강아지를 선택하세요 --</option></select><div class="selected-dog-info" id="selectedDogInfo"></div></div></div></div>
@@ -392,6 +397,7 @@
             db.collection('posts').onSnapshot(snap => {
                 cachedPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (document.getElementById('boardView').style.display !== 'none') showBoardList();
+                renderRecentPosts();
             });
             db.collection('settings').doc('main').onSnapshot(snap => {
                 if (snap.exists) { cachedSettings = { id: 'main', ...snap.data() }; applySiteSettings(); }
@@ -568,9 +574,29 @@
             return `<div class="record-item" data-id="${rec.id}"><div class="record-header"><div>${showName ? `<span class="record-dog-name">${escapeHtml(rec.dogName)}</span>` : ''}${rec.breed ? `<span style="font-size:0.8rem;color:var(--gray-500);margin-left:0.3rem;">${escapeHtml(rec.breed)}</span>` : ''}<span class="record-date">${rec.compDate || ''}</span></div></div><div class="record-competition">${escapeHtml(rec.compName)}${rec.organizer ? ' &middot; ' + escapeHtml(rec.organizer) : ''}${rec.venue ? ' &middot; ' + escapeHtml(rec.venue) : ''}</div><div class="record-tags"><span class="tag tag-event">${rec.eventType}</span><span class="tag tag-level">${rec.level}</span><span class="tag tag-size">${rec.sizeClass}</span>${rec.matchType ? `<span class="tag tag-level">${rec.matchType}</span>` : ''}${rt}${rec.promoted === '승급' ? '<span class="tag tag-rank">&#x2B06; 승급</span>' : ''}</div><div class="record-stats"><div class="stat"><div class="stat-label">등수</div><div class="stat-value">${rk}</div></div><div class="stat"><div class="stat-label">주행 시간</div><div class="stat-value">${tm}</div></div><div class="stat"><div class="stat-label">실책</div><div class="stat-value">${rec.faults}</div></div><div class="stat"><div class="stat-label">거부</div><div class="stat-value">${rec.refusals}</div></div><div class="stat"><div class="stat-label">감점</div><div class="stat-value">${rec.penalties}</div></div></div>${rec.memo ? `<div class="record-memo">${escapeHtml(rec.memo)}</div>` : ''}<div class="record-actions"><button class="btn btn-danger btn-sm delete-btn" data-id="${rec.id}">삭제</button></div></div>`;
         }
 
+        // ===== 최근 게시글 (전체기록 탭 상단) =====
+        function renderRecentPosts() {
+            const area = document.getElementById('recentPostsArea');
+            const posts = [...cachedPosts].sort((a, b) => {
+                if (a.category === '공지' && b.category !== '공지') return -1;
+                if (a.category !== '공지' && b.category === '공지') return 1;
+                return (b.createdAt || '').localeCompare(a.createdAt || '');
+            }).slice(0, 3);
+            if (!posts.length) { area.innerHTML = ''; return; }
+            area.innerHTML = `<div class="recent-posts-title">&#x1F4E2; 최근 게시글</div><div class="recent-posts-list">${posts.map(p => `<div class="recent-post-item${p.category === '공지' ? ' pinned' : ''}" data-id="${p.id}"><div class="recent-post-category">${p.category === '공지' ? '<span class="tag tag-notice">공지</span>' : p.category ? `<span class="tag tag-event">${escapeHtml(p.category)}</span>` : ''}</div><div class="recent-post-content"><div class="recent-post-title-text">${escapeHtml(p.title)}</div><div class="recent-post-meta">${escapeHtml(p.author || '익명')} · ${fmtDate(p.createdAt)}</div></div><div class="recent-post-arrow">›</div></div>`).join('')}</div>`;
+            area.querySelectorAll('.recent-post-item').forEach(el => el.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('.tab-btn[data-tab="board"]').classList.add('active');
+                document.getElementById('tab-board').classList.add('active');
+                showPostDetail(el.dataset.id);
+            }));
+        }
+
         // ===== 전체 기록 =====
         let sortAsc = false;
         function renderAllRecords() {
+            renderRecentPosts();
             const lf = document.getElementById('filterLevel').value; const sf = document.getElementById('filterSize').value; const ef = document.getElementById('filterEvent').value;
             let f = cachedRecords.filter(r => { if (lf && r.level !== lf) return false; if (sf && r.sizeClass !== sf) return false; if (ef && r.eventType !== ef) return false; return true; });
             f.sort((a, b) => { const c = (a.compDate || '').localeCompare(b.compDate || ''); return sortAsc ? c : -c; });
